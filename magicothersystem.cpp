@@ -1,9 +1,11 @@
 #include <sys/time.h>
 
-#include <proto/exec.h>
-#include <proto/intuition.h>
-#include <proto/graphics.h>
-#include <proto/keymap.h>
+#ifdef APOLLO
+#include "apollo/ApolloCrossDev_Base.h"
+#include "apollo/ApolloCrossDev_Library.h"
+#include "apollo/ApolloCrossDev_Debug.h"
+#endif
+
 #include <exec/types.h>        // Basic types and definitions
 #include <exec/memory.h>      // Memory allocation and deallocation functions
 #include <exec/libraries.h>   // Library management functions
@@ -12,8 +14,6 @@
 #include <intuition/intuition.h> // Intuition structures and functions (window management)
 #include <intuition/icclass.h> // Intuition IDCMP classes (event classes)
 #include <workbench/startup.h> // Workbench startup structures (optional, depending on your needs)
-#include <SDL/SDL.h>
-
 #include <exec/types.h>
 #include <intuition/screens.h>
 #include <graphics/view.h>
@@ -21,8 +21,21 @@
 #include <graphics/rastport.h>
 #include <intuition/intuition.h>
 #include <stdio.h>
-#include <proto/lowlevel.h>
+
 #include <libraries/lowlevel.h>
+
+#include <proto/exec.h>
+#include <proto/intuition.h>
+#include <proto/graphics.h>
+#include <proto/keymap.h>
+#include <proto/lowlevel.h>
+#include <SDL/SDL.h>
+
+#ifdef APOLLO
+extern char ApolloDebugMessage[200];
+ULONG *Apollo_PiP_Screen;
+ULONG FrameCounter = 0;
+#endif
 
 struct Screen *wbScreen;
 ULONG *originalColors = NULL;  // Array to hold original colors
@@ -488,8 +501,7 @@ if (FileExists("env:Settlers2/UseReq"))
 	    displayhandle = FindDisplayInfo(modeID);
 	    if (displayhandle)
 	    {
-		result = GetDisplayInfoData(displayhandle, (UBYTE *)&diminfo,
-			    sizeof(struct DimensionInfo), DTAG_DIMS, NULL);
+		result = GetDisplayInfoData(displayhandle, (UBYTE *)&diminfo, sizeof(struct DimensionInfo), DTAG_DIMS, 0);
 		if (result)
 		{
 		    if (diminfo.MaxDepth == 8)
@@ -528,7 +540,12 @@ if (FileExists("env:Settlers2/UseReq"))
 }
 extern "C" void *MSS_OpenScreen(int width, int height, int depth, int fullscreen, char *title)
 {
-	int mode = GetMode(width,height);
+	#ifdef APOLLO
+    uint32_t mode = GetMode(width,height);
+    #else
+    int mode = GetMode(width, height);
+    #endif
+
 	FILE *fil;
 	
 	if (!LowLevelBase) LowLevelBase = OpenLibrary("lowlevel.library",0);
@@ -1182,6 +1199,17 @@ extern "C" void MSS_DrawArray(void *screen, unsigned char* src, unsigned int x, 
         return;
 
     struct RastPort *rastPort = amigaScreen->window->RPort;
+
+#ifdef APOLLO
+    UBYTE *dst = (UBYTE*)rastPort->BitMap->Planes[0] + x + (y * rastPort->BitMap->BytesPerRow);
+    if (w%32)
+    {
+        ApolloCopy( src, dst, w, h, srcwidth - w, rastPort->BitMap->BytesPerRow - w );
+    } else {
+        ApolloCopy32( src, dst, w, h, srcwidth - w, rastPort->BitMap->BytesPerRow - w );
+    }
+    return;
+#endif
 
     // Compute destination start in the window bitmap coordinates.
     UWORD xstart = (UWORD)x;

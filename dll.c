@@ -139,7 +139,7 @@ void *dllInternalLoadLibrary(char *filename,char *portname,int raiseusecount)
 		SystemTags(commandline,
 			SYS_Asynch, TRUE,
 			SYS_Output, output,
-			SYS_Input,  NULL, //FIXME: some dll's might need stdin
+			SYS_Input,  0, //FIXME: some dll's might need stdin
 			NP_StackSize, 10000, //Messagehandler doesn't need a big stack (FIXME: but DLL_(De)Init might)
 			TAG_DONE);
 

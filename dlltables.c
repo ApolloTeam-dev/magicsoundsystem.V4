@@ -56,9 +56,18 @@ void *MSS_OpenScreen(int width, int height, int depth, int fullscreen, char *tit
 void MSS_CloseScreen(void *screen);
 void MSS_SetColors(void *screen, int startCol, int skipCols, int numCols, unsigned char *rvalues, unsigned char *gvalues, unsigned char *bvalues);
 int MSS_GetMouseState(int *x, int *y);
+
+struct MssEvent
+{
+	int type;
+	int key;
+	int state;
+};
+
 int MSS_PeepKeyDownEvent(struct MssEvent *event);
 void MSS_PumpEvents();
 int MSS_PollEvent(struct MssEvent *event);
+
 void MSS_FillRect(void *screen, int col, int x, int y, int width, int height);
 void MSS_ShowCursor(int enable);
 void MSS_LockScreen(void *screen);

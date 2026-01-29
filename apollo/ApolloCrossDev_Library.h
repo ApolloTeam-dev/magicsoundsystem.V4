@@ -78,8 +78,11 @@ void ApolloShowPattern(uint8_t *buffer, uint16_t width, uint16_t height, uint8_t
 void ApolloFill( _A0(UBYTE* dst), _D3(uint16_t w), _D4(uint16_t h), _D5(uint16_t d), _D6(uint32_t dstmod), _D7(uint32_t value) );
 
 // ApolloCopy/ApolloCopy32: copy a block of memory from source to destination (ApolloCopy 32 requires 32-bit alignment) 
-void ApolloCopy( _A0(uint32_t *src), _A1(uint32_t *dst), _D3(uint16_t width), _D4(uint16_t height), _D5(uint16_t srcmod), _D6(uint16_t dstmod) );
-void ApolloCopy32( _A0(uint32_t *src), _A1(uint32_t *dst), _D3(uint16_t width), _D4(uint16_t height), _D5(uint16_t srcmod), _D6(uint16_t dstmod) );
+void ApolloCopy( _A0(UBYTE *s), _A1(UBYTE *d), _D3(UWORD width), _D4(UWORD height), _D5(UWORD spitch), _D6(UWORD dpitch) );
+void ApolloCopy32(_A0(UBYTE *s), _A1(UBYTE *d), _D3(UWORD width), _D4(UWORD height), _D5(UWORD spitch), _D6(UWORD dpitch) ); 
+
+//void ApolloCopy( _A0(uint8_t *src), _A1(uint8_t *dst), _D3(uint16_t width), _D4(uint16_t height), _D5(uint16_t srcmod), _D6(uint16_t dstmod) );
+//void ApolloCopy32( _A0(uint32_t *src), _A1(uint32_t *dst), _D3(uint16_t width), _D4(uint16_t height), _D5(uint16_t srcmod), _D6(uint16_t dstmod) );
 
 // ApolloCPUDelay: Wait fox <WaitTime> milliseconds
 void ApolloCPUDelay( _D0(uint32_t WaitTime));

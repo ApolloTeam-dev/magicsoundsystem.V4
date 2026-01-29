@@ -15,6 +15,9 @@
 #include "exec/types.h"
 #include "clib/exec_protos.h"
 #include "clib/graphics_protos.h"
+#include "clib/lowlevel_protos.h"
+
+
 #include <proto/intuition.h>
 #include <proto/dos.h>
 #include <intuition/intuition.h>

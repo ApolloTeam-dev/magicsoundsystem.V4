@@ -76,7 +76,7 @@ _ApolloCopy:
 
 .LoopHeight:
 	move.l d3,d0					* d0 = reset width loop counter each height loop
-	lsr.w  #3,d0					* divide width counter by 8 to convert 2-byte pixel to 16-byte pixel counter
+	lsr.w  #4,d0					* divide width counter by 16 to convert byte pixel to 16-byte pixel chunk counter
 	bra.s .GoLoopWidth16Byte
 
 .LoopWidth16Byte:
@@ -84,14 +84,14 @@ _ApolloCopy:
 	
 .GoLoopWidth16Byte:
 	dbra   d0,.LoopWidth16Byte
-	moveq #7,d0						* d0 = set lowest three bits to %111 (= #7)
-	and.w d3,d0						* d0 = mask lowest three bits of width for remainder 2-byte pixel counter
-	bra.s .GoLoopWidth2Byte			* Process remainder width WORD
+	moveq #15,d0					* d0 = set lowest four bits to %1111 (= #15)
+	and.w d3,d0						* d0 = mask lowest four bits of width for remainder byte pixel counter
+	bra.s .GoLoopWidthByte			* Process remainder pixels
 
-.LoopWidth2Byte:
-	move.w (a0)+,(a1)+				* copy src-pixel to dst-pixel
-.GoLoopWidth2Byte:
-	dbra d0,.LoopWidth2Byte			* d0 = decrease WORD width loop counter and jump to .Loop16bit
+.LoopWidthByte:
+	move.b (a0)+,(a1)+				* copy src-pixel to dst-pixel
+.GoLoopWidthByte:
+	dbra d0,.LoopWidthByte			* d0 = decrease byte pixel width loop counter and jump to .LoopWidthByte
 
 .EndLoopWidth:
 	add.l d5,a0						* a0 = add source pitch d4 to source pointer (modulo)

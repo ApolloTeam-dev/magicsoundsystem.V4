@@ -38,6 +38,11 @@ const char *version_tag = "$VER: 3.1 MagicSystem.dll (RTG+DBuffering, 05.10.2024
 #endif
 #endif
 
+#ifdef APOLLO
+char __attribute__((used)) stackcookie[] = "$STACK: 2000000";
+const char *version_tag = "$VER: 3.11 MagicSystem.dll (Apollo V4, 29.01.2026) by Steffen \"MagicSN\" Haeuser";
+#endif
+
 #include "audio_utils.h"
 #include "magicsoundsystem_oggfile.h"
 
@@ -265,7 +270,7 @@ void AudioCallback_Ogg(SoundItem *sound, void *userdata, unsigned char *stream, 
 void AudioCallback_MP3(SoundItem *sound, void *userdata, unsigned char *stream, int length) 
 {
     // For MP3 files, decode and mix audio data from stream
-	WORD pcm[MPEGA_MAX_CHANNELS] = { NULL, NULL };
+	WORD pcm[MPEGA_MAX_CHANNELS] = { 0, 0 };
     LONG samples = MPEGA_decode_frame(sound->mp3_stream, pcm);
     if (samples > 0) 
     {
@@ -881,7 +886,7 @@ extern "C" void *MSS_LoadStreamFromMemory(void *mem_ptr, int len, int stream_typ
             return 0;
         }
 		
-        WORD pcm[MPEGA_MAX_CHANNELS] = { NULL, NULL };
+        WORD pcm[MPEGA_MAX_CHANNELS] = { 0, 0 };
         LONG samples = MPEGA_decode_frame(mp3_stream, pcm);
         if (samples < 0)
 		{
