@@ -4,7 +4,7 @@
 #include <vector>
 #include <algorithm>
 #include <timidity/timidity.h>
-#include <proto/mpega.h>
+#include <proto/MPEGA.h>
 #include <libraries/mpega.h>
 #include <proto/exec.h>
 
@@ -258,7 +258,7 @@ void AudioCallback_Ogg(SoundItem *sound, void *userdata, unsigned char *stream, 
 void AudioCallback_MP3(SoundItem *sound, void *userdata, unsigned char *stream, int length) 
 {
     // For MP3 files, decode and mix audio data from stream
-	WORD *pcm[MPEGA_MAX_CHANNELS] = { nullptr, nullptr };
+	WORD pcm[MPEGA_MAX_CHANNELS] = { NULL, NULL };
     LONG samples = MPEGA_decode_frame(sound->mp3_stream, pcm);
     if (samples > 0) 
     {
@@ -874,7 +874,7 @@ extern "C" void *MSS_LoadStreamFromMemory(void *mem_ptr, int len, int stream_typ
             return 0;
         }
 		
-        WORD *pcm[MPEGA_MAX_CHANNELS] = { nullptr, nullptr };
+        WORD pcm[MPEGA_MAX_CHANNELS] = { NULL, NULL };
         LONG samples = MPEGA_decode_frame(mp3_stream, pcm);
         if (samples < 0)
 		{
@@ -1299,7 +1299,7 @@ extern "C" void *MSS_LoadSample(const char* name)
 
 		sound->extFile = (unsigned char*)midiData;
 
-		sound->midiStream = mid_istream_open_mem(midiData, fileSize, 1);
+		sound->midiStream = mid_istream_open_mem(midiData, fileSize);
 		if (!sound->midiStream) 
 		{
 			free(midiData);

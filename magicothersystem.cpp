@@ -1,4 +1,3 @@
-#include <sdl/SDL.h>
 #include <sys/time.h>
 
 #include <proto/exec.h>
