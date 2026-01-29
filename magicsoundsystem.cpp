@@ -8,6 +8,13 @@
 #include <libraries/mpega.h>
 #include <proto/exec.h>
 
+
+#ifdef APOLLO
+bool apollo_v4 = true;
+#else
+bool apollo_v4 = false;
+#endif	
+
 #ifdef USEAGA
 #ifdef NOFPU
 char __attribute__((used)) stackcookie[] = "$STACK: 2000000";
@@ -1210,7 +1217,7 @@ extern "C" void *MSS_LoadSample(const char* name)
 			long fileSize = ftell(thefile);
 			fclose(thefile);				
 			
-			if ((fileSize > streamThreshold) && (streamThreshold != 0))
+			if ((fileSize > streamThreshold) && (streamThreshold != 0) &&(!apollo_v4))
 			{ 
 				if (LoadWAVStreaming(wavpath, sound) != 1) 
 				{
