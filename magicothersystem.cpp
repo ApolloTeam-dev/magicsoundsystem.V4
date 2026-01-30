@@ -283,6 +283,8 @@ extern "C" void MSS_RemoveTimer(void *timerid)
 
 extern "C" void MSS_CloseScreen(void *screenHandle)
 {
+    AD(ApolloDebugPutStr("MSS_CloseScreen\n");)
+    
     struct MssAmigaScreen *amigaScreen = (struct MssAmigaScreen *)screenHandle;
     if (!amigaScreen) return;
 
@@ -325,6 +327,9 @@ extern "C" void MSS_CloseScreen(void *screenHandle)
 		CloseLibrary(LowLevelBase);
 		LowLevelBase = 0;
 	}
+    #ifdef APOLLO
+    *(volatile int16_t*)APOLLO_SAGA_PIP_DMAROWS = 0;
+    #endif 
 }
 
 #ifndef USEAGA
@@ -795,26 +800,34 @@ extern "C" void MSS_SetColors(void *screenHandle, int startCol, int skipCols, in
     int colorIndex = 1;  // Start filling after the first count/index word
     for (int i = 0; i < numCols; i++)
     {
+        #ifdef APOLLO
+        *(volatile uint32_t*)APOLLO_SAGA_PIPCHK_COL = ((i+colIndex)<<24) + ((uint8_t)rvalues[startCol+i]<<16) + ((uint8_t)gvalues[startCol+i]<<8) + ((uint8_t)bvalues[startCol+i]);
+        if(amigaScreen->fullscreen)
+        {
+            colors[colorIndex++] = (ULONG)rvalues[startCol+i] * 0x01010101;  // Left-justified 8-bit red value
+            colors[colorIndex++] = (ULONG)gvalues[startCol+i] * 0x01010101;  // Left-justified 8-bit green value
+            colors[colorIndex++] = (ULONG)bvalues[startCol+i] * 0x01010101;  // Left-justified 8-bit blue value
+        }
+        sprintf(ApolloDebugMessage,"Set Color %d: R=%02x G=%02x B=%02x\n",i,rvalues[startCol+i],gvalues[startCol+i],bvalues[startCol+i]);
+        ApolloDebugPutStr(ApolloDebugMessage);
+        #else
         colors[colorIndex++] = (ULONG)rvalues[startCol+i] * 0x01010101;  // Left-justified 8-bit red value
         colors[colorIndex++] = (ULONG)gvalues[startCol+i] * 0x01010101;  // Left-justified 8-bit green value
         colors[colorIndex++] = (ULONG)bvalues[startCol+i] * 0x01010101;  // Left-justified 8-bit blue value
-                
-        #ifdef APOLLO
-        *(volatile uint32_t*)APOLLO_SAGA_PIPCHK_COL = ((i)<<24) + ((uint8_t)rvalues[startCol+i]<<16) + ((uint8_t)gvalues[startCol+i]<<8) + ((uint8_t)bvalues[startCol+i]);
         #endif
     }
-
-    #ifdef APOLLO
-    return;
-    #endif
 
     // Terminate the table with a 0 (as per the LoadRGB32 specification)
     colors[colorIndex] = 0;
 
     // Load the color values into the ViewPort using LoadRGB32
     
-    LoadRGB32(&amigaScreen->screen->ViewPort, colors);	
-}
+    #ifdef APOLLO
+    if(amigaScreen->fullscreen) LoadRGB32(&amigaScreen->screen->ViewPort, colors);	
+    #else
+    LoadRGB32(&amigaScreen->screen->ViewPort, colors);
+    #endif
+}   
 
 int currentLeftButton = 0;
 int currentRightButton = 0;
@@ -1182,6 +1195,10 @@ extern "C" int MSS_PollEvent(struct MssEvent *event)
 
 extern "C" void MSS_FillRect(void *screen, int col, int x, int y, int width, int height)
 {
+    #ifdef APOLLO
+    return;
+    #endif
+    
     struct MssAmigaScreen *amigaScreen = (struct MssAmigaScreen *)mssAmigaScreen; // Assuming mssAmigaScreen is a global pointer to your MssAmigaScreen
     if (!amigaScreen || !amigaScreen->window) return;
 
@@ -1192,6 +1209,9 @@ extern "C" void MSS_FillRect(void *screen, int col, int x, int y, int width, int
 
     // Fill the rectangle
     RectFill(rp, x, y, x + width - 1, y + height - 1); // Fill the rectangle
+
+    sprintf(ApolloDebugMessage,"FillRect Color: %d X: %d Y: %d W: %d H: %d\n",col,x,y,width,height);
+    ApolloDebugPutStr(ApolloDebugMessage);
 }
 
 extern "C" void MSS_ShowCursor(int enable)
@@ -1267,9 +1287,9 @@ extern "C" void MSS_DrawArray(void *screen, unsigned char* src, unsigned int x, 
     } else {
         if (w%32)
         {
-            ApolloCopy( src, apollo_pip.buffer + apollo_pip.position, w, h, srcwidth - w, 0 );
+            ApolloCopy( src, apollo_pip.buffer + apollo_pip.position + x + (y * apollo_pip.width), w, h, srcwidth - w, apollo_pip.width - w );
         } else {
-            ApolloCopy32( src, apollo_pip.buffer + apollo_pip.position, w, h, srcwidth - w, 0 );
+            ApolloCopy32( src, apollo_pip.buffer + apollo_pip.position + x + (y * apollo_pip.width), w, h, srcwidth - w, apollo_pip.width - w );
         }
         return;        
     }
