@@ -11,6 +11,9 @@ extern "C"{
 
 #include "ApolloCrossDev_Base.h"
 
+// Global Variables
+extern char ApolloDebugMessage[200];
+
 /** Screen/Serial Debug **/
 
 #define SERPER_BASE_PAL		3546895

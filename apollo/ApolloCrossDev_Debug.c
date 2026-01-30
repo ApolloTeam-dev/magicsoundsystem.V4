@@ -7,6 +7,9 @@
 
 #include "ApolloCrossDev_Debug.h"
 
+// Global Variables
+char ApolloDebugMessage[200];
+
 void reg_w(uint32_t reg, uint16_t val)
 {
     volatile uint16_t *r = (void *)(reg);

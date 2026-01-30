@@ -9,9 +9,6 @@ extern "C"{
 #include "ApolloCrossDev_Base.h"
 #include "ApolloCrossDev_Debug.h"
 
-// Global Variables
-char ApolloDebugMessage[200];
-
 // ApolloCrossDev C Functions ######################################
 
 struct ApolloSound
@@ -31,6 +28,7 @@ struct ApolloSound
     uint16_t    period;
     uint8_t     channel;
 };
+
 uint8_t ApolloLoadSound(struct ApolloSound *sound);
 
 struct ApolloPicture
@@ -50,6 +48,8 @@ struct ApolloPicture
     // Display Values
     int16_t     modulo;
 };
+
+uint8_t ApolloAlloc( struct ApolloPicture *picture);
 uint8_t ApolloLoadPicture(struct ApolloPicture *picture);
 
 void ApolloCacheFile(const char *filename, uint8_t **cache_base, uint32_t *cache_offset, uint16_t file_offset);

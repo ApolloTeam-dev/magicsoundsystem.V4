@@ -1,3 +1,9 @@
+#ifdef APOLLO
+#include "apollo/ApolloCrossDev_Base.h"
+#include "apollo/ApolloCrossDev_Library.h"
+#include "apollo/ApolloCrossDev_Debug.h"
+#endif
+
 #include <SDL/SDL.h>
 #include <vorbis/codec.h>   
 #include <vorbis/vorbisfile.h> 
@@ -14,6 +20,11 @@ bool apollo_v4 = true;
 #else
 bool apollo_v4 = false;
 #endif	
+
+#ifdef APOLLO
+char __attribute__((used)) stackcookie[] = "$STACK: 2000000";
+const char *version_tag = "$VER: 3.11 MagicSystem.dll (Apollo V4, 29.01.2026) by Steffen \"MagicSN\" Haeuser";
+#else
 
 #ifdef USEAGA
 #ifdef NOFPU
@@ -37,10 +48,6 @@ char __attribute__((used)) stackcookie[] = "$STACK: 2000000";
 const char *version_tag = "$VER: 3.1 MagicSystem.dll (RTG+DBuffering, 05.10.2024) by Steffen \"MagicSN\" Haeuser";
 #endif
 #endif
-
-#ifdef APOLLO
-char __attribute__((used)) stackcookie[] = "$STACK: 2000000";
-const char *version_tag = "$VER: 3.11 MagicSystem.dll (Apollo V4, 29.01.2026) by Steffen \"MagicSN\" Haeuser";
 #endif
 
 #include "audio_utils.h"

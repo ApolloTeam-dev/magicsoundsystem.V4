@@ -1,10 +1,10 @@
-#include <sys/time.h>
-
 #ifdef APOLLO
 #include "apollo/ApolloCrossDev_Base.h"
 #include "apollo/ApolloCrossDev_Library.h"
 #include "apollo/ApolloCrossDev_Debug.h"
 #endif
+
+#include <sys/time.h>
 
 #include <exec/types.h>        // Basic types and definitions
 #include <exec/memory.h>      // Memory allocation and deallocation functions
@@ -35,6 +35,7 @@
 extern char ApolloDebugMessage[200];
 ULONG *Apollo_PiP_Screen;
 ULONG FrameCounter = 0;
+extern bool apollo_v4;
 #endif
 
 struct Screen *wbScreen;
@@ -256,7 +257,11 @@ struct MssAmigaScreen {
 
 struct MssAmigaScreen *mssAmigaScreen = 0;
 
-extern "C" unsigned long MSS_GetTicks()
+#ifdef APOLLO
+struct ApolloPicture apollo_pip = {};
+#endif
+
+extern "C" unsigned long MSS_GetTicks() 
 {
 #ifdef __amigaos4__
 	return SDL_GetTicks();
@@ -302,7 +307,9 @@ extern "C" void MSS_CloseScreen(void *screenHandle)
         }
         if (amigaScreen->screen)
         {
-			RestoreColors(amigaScreen->screen);			
+			#ifndef APOLLO
+            RestoreColors(amigaScreen->screen);	
+            #endif		
             UnlockPubScreen(NULL, amigaScreen->screen);
         }
     }
@@ -597,10 +604,10 @@ extern "C" void *MSS_OpenScreen(int width, int height, int depth, int fullscreen
             { SA_Type, CUSTOMSCREEN },  // Custom screen for fullscreen
             { SA_Title, (ULONG)title }, // Screen title
             { SA_DisplayID, mode }, // AGA Lores Mode (adjust as needed)
-#ifdef USEGRAFFITI
+    #ifdef USEGRAFFITI
     { SA_Quiet, TRUE },
     { SA_ShowTitle, FALSE },
-#endif
+    #endif
             { TAG_END }
         };
         amigaScreen->screen = OpenScreenTagList(NULL, screenTags);
@@ -619,7 +626,10 @@ extern "C" void *MSS_OpenScreen(int width, int height, int depth, int fullscreen
             free(amigaScreen);  // Free the allocated structure
             return NULL;
         }
-		BackupColors(amigaScreen->screen);
+               
+        #ifdef APOLLO
+        BackupColors(amigaScreen->screen);
+        #endif
     }
 
     // Open a window regardless of the fullscreen status
@@ -661,24 +671,41 @@ extern "C" void *MSS_OpenScreen(int width, int height, int depth, int fullscreen
 		amigaScreen->pointer = AllocVec(24, MEMF_CLEAR|MEMF_CHIP);
 		if (!amigaScreen->pointer)
 		{
-		if (amigaScreen->window) CloseWindow(amigaScreen->window);
-        if (fullscreen) {
+		    if (amigaScreen->window) CloseWindow(amigaScreen->window);
+            if (fullscreen)
+            {
             CloseScreen(amigaScreen->screen); // Close custom screen on failure
-        } else {
+            } else {
             UnlockPubScreen(NULL, amigaScreen->screen); // Unlock Workbench screen on failure
-        }
-        free(amigaScreen);  // Free the allocated structure
-        return NULL;			
+            }
+            free(amigaScreen);  // Free the allocated structure
+            return NULL;			
 		}
 	
 		//ClearPointer(amigaScreen->window);
 		SetPointer(amigaScreen->window, (UWORD*)amigaScreen->pointer, 1, 16, 0, 0);		
-	}
-	else amigaScreen->pointer = 0;
-	
+	} else {
+        amigaScreen->pointer = 0; 
+        
+        #ifdef APOLLO
+        apollo_pip = {"PiP_Window", 0, 0, NULL, 0, 0, 640, 480, 8, 0, 0};
+        ApolloAlloc(&apollo_pip);
+        ApolloFill(apollo_pip.buffer + apollo_pip.position, apollo_pip.width, apollo_pip.height, apollo_pip.depth, 0, 0x00);
+        *(volatile LONG*)APOLLO_SAGA_PIP_POINTER = (uint32_t)(apollo_pip.buffer + apollo_pip.position);        // Set PiP Bitmap Pointer
+        *(volatile int16_t*)APOLLO_SAGA_PIP_X_START = amigaScreen->window->LeftEdge + amigaScreen->window->BorderLeft + 16;                                                 // Set PiP X Start Position (+16 pixel correction needed) 
+        *(volatile int16_t*)APOLLO_SAGA_PIP_X_STOP = amigaScreen->window->LeftEdge + + amigaScreen->window->BorderLeft + apollo_pip.width + 16 ;                     // Set PiP X Stop Position (+16 pixel correction needed) 
+        *(volatile int16_t*)APOLLO_SAGA_PIP_Y_START = amigaScreen->window->TopEdge + amigaScreen->window->BorderTop ;                                                   // Set PiP Y Start Position (-1 pixel correction needed)     
+        *(volatile int16_t*)APOLLO_SAGA_PIP_Y_STOP = amigaScreen->window->TopEdge + amigaScreen->window->BorderTop + apollo_pip.height ;                       // Set PiP Y Stop Position (-1 pixel correction needed)
+        *(volatile int16_t*)APOLLO_SAGA_PIP_GFXMODE = APOLLO_SAGA_8_INDEX;                            // Match Apollo SAGA with PiP Overlay Bitmap format                         
+        *(volatile int16_t*)APOLLO_SAGA_PIP_MODULO = 0;                                                                         // No Modulo (PiP Bitmap width matches PiP Window width)                                   
+        *(volatile int16_t*)APOLLO_SAGA_PIP_CLRKEY = 0x0000;                                                                    // Colorkey = 0 -> ChromKey mode disable -> Overlay Mode Enabled
+        *(volatile int16_t*)APOLLO_SAGA_PIP_DMAROWS = width * (depth/8);                  // DMA fetch = number of pixels per row = width*bytes per pixel
+        #endif
+    }   
+
 	if (amigaScreen->window->UserPort == 0)
 	{
-	    ModifyIDCMP(amigaScreen->window, IDCMP_RAWKEY|IDCMP_MOUSEBUTTONS|IDCMP_CLOSEWINDOW);
+	    ModifyIDCMP(amigaScreen->window, IDCMP_RAWKEY|IDCMP_MOUSEBUTTONS|IDCMP_CLOSEWINDOW|IDCMP_CHANGEWINDOW );
 	}
 
 	mssAmigaScreen = amigaScreen;
@@ -716,6 +743,7 @@ extern "C" void *MSS_OpenScreen(int width, int height, int depth, int fullscreen
 	//fprintf(stderr,"Writing to Buffer 1\n");
 
     // Return the structure as a void pointer
+
     return (void *)amigaScreen;
 }
 
@@ -728,7 +756,12 @@ return;
 	// Toggle between the two buffers
     amigaScreen->bufferToggle = !amigaScreen->bufferToggle;
 	
-	fprintf(stderr,"Flipping to Buffer: %d Writing to Buffer %d\n",amigaScreen->bufferToggle,!amigaScreen->bufferToggle);
+	#ifdef APOLLO
+    sprintf(ApolloDebugMessage,"Flipping to Buffer: %d Writing to Buffer %d\n",amigaScreen->bufferToggle,!amigaScreen->bufferToggle);
+    ApolloDebugPutStr(ApolloDebugMessage);
+    #else
+    fprintf(stderr,"Flipping to Buffer: %d Writing to Buffer %d\n",amigaScreen->bufferToggle,!amigaScreen->bufferToggle);
+    #endif
 
     // Swap the buffers using ChangeScreenBuffer
     if (!ChangeScreenBuffer(amigaScreen->screen, amigaScreen->screenBuffers[amigaScreen->bufferToggle])) 
@@ -765,12 +798,21 @@ extern "C" void MSS_SetColors(void *screenHandle, int startCol, int skipCols, in
         colors[colorIndex++] = (ULONG)rvalues[startCol+i] * 0x01010101;  // Left-justified 8-bit red value
         colors[colorIndex++] = (ULONG)gvalues[startCol+i] * 0x01010101;  // Left-justified 8-bit green value
         colors[colorIndex++] = (ULONG)bvalues[startCol+i] * 0x01010101;  // Left-justified 8-bit blue value
+                
+        #ifdef APOLLO
+        *(volatile uint32_t*)APOLLO_SAGA_PIPCHK_COL = ((i)<<24) + ((uint8_t)rvalues[startCol+i]<<16) + ((uint8_t)gvalues[startCol+i]<<8) + ((uint8_t)bvalues[startCol+i]);
+        #endif
     }
+
+    #ifdef APOLLO
+    return;
+    #endif
 
     // Terminate the table with a 0 (as per the LoadRGB32 specification)
     colors[colorIndex] = 0;
 
     // Load the color values into the ViewPort using LoadRGB32
+    
     LoadRGB32(&amigaScreen->screen->ViewPort, colors);	
 }
 
@@ -848,7 +890,18 @@ extern "C" void MSS_PumpEvents()
 	{
 		switch (msg->Class)
 		{
-			case IDCMP_MOUSEBUTTONS:
+			#ifdef APOLLO
+            case IDCMP_CHANGEWINDOW:
+            {
+                *(volatile int16_t*)APOLLO_SAGA_PIP_X_START = amigaScreen->window->LeftEdge + amigaScreen->window->BorderLeft + 16;                                                 // Set PiP X Start Position (+16 pixel correction needed) 
+                *(volatile int16_t*)APOLLO_SAGA_PIP_X_STOP = amigaScreen->window->LeftEdge + + amigaScreen->window->BorderLeft + apollo_pip.width + 16 ;                     // Set PiP X Stop Position (+16 pixel correction needed) 
+                *(volatile int16_t*)APOLLO_SAGA_PIP_Y_START = amigaScreen->window->TopEdge + amigaScreen->window->BorderTop ;                                                   // Set PiP Y Start Position (-1 pixel correction needed)     
+                *(volatile int16_t*)APOLLO_SAGA_PIP_Y_STOP = amigaScreen->window->TopEdge + amigaScreen->window->BorderTop + apollo_pip.height ;                       // Set PiP Y Stop Position (-1 pixel correction needed)
+            }
+            break;
+            #endif
+
+            case IDCMP_MOUSEBUTTONS:
 			{
 				if (msg->Code==IECODE_LBUTTON) 
 				{
@@ -1200,16 +1253,27 @@ extern "C" void MSS_DrawArray(void *screen, unsigned char* src, unsigned int x, 
 
     struct RastPort *rastPort = amigaScreen->window->RPort;
 
-#ifdef APOLLO
-    UBYTE *dst = (UBYTE*)rastPort->BitMap->Planes[0] + x + (y * rastPort->BitMap->BytesPerRow);
-    if (w%32)
+    #ifdef APOLLO
+    if(amigaScreen->fullscreen)
     {
-        ApolloCopy( src, dst, w, h, srcwidth - w, rastPort->BitMap->BytesPerRow - w );
+        UBYTE *dst = (UBYTE*)rastPort->BitMap->Planes[0] + x + (y * rastPort->BitMap->BytesPerRow);
+        if (w%32)
+        {
+            ApolloCopy( src, dst, w, h, srcwidth - w, rastPort->BitMap->BytesPerRow - w );
+        } else {
+            ApolloCopy32( src, dst, w, h, srcwidth - w, rastPort->BitMap->BytesPerRow - w );
+        }
+        return;
     } else {
-        ApolloCopy32( src, dst, w, h, srcwidth - w, rastPort->BitMap->BytesPerRow - w );
+        if (w%32)
+        {
+            ApolloCopy( src, apollo_pip.buffer + apollo_pip.position, w, h, srcwidth - w, 0 );
+        } else {
+            ApolloCopy32( src, apollo_pip.buffer + apollo_pip.position, w, h, srcwidth - w, 0 );
+        }
+        return;        
     }
-    return;
-#endif
+    #endif
 
     // Compute destination start in the window bitmap coordinates.
     UWORD xstart = (UWORD)x;

@@ -1,10 +1,18 @@
 #define USENODLL
 
+#ifdef APOLLO
+#include "apollo/ApolloCrossDev_Base.h"
+#include "apollo/ApolloCrossDev_Library.h"
+#include "apollo/ApolloCrossDev_Debug.h"
+#endif
+
 #include <stdlib.h>
 
 #include "dll.h"
 
+#ifndef APOLLO
 #define bool int
+#endif
 
 typedef int (*MSS_OpenWaveFunc)(const char*, unsigned char**, unsigned int*, int);
 typedef void (*MSS_CloseWaveFunc)(void *, void *);
@@ -149,7 +157,12 @@ dll_tImportSymbol DLL_ImportSymbols[]=
 
 int  DLL_Init(void)
 {
-    return 1L;
+    #ifdef APOLLO_DEBUG
+	ApolloDebugInit();
+	ApolloDebugPutStr("Apollo Serial Debug ******************************************************\n");
+	#endif	
+	
+	return 1L;
 }
 
 void  DLL_DeInit(void)

@@ -236,6 +236,34 @@ void ApolloFadeOutSound(struct ApolloSound *sound)
 
 // ApolloPicture Functions ######################################
 
+uint8_t ApolloAlloc( struct ApolloPicture *picture)
+{
+	uint8_t *buffer_aligned = 0;	// 32-Byte aligned input buffer
+	
+	if(picture->size == 0) picture->size = (picture->width * picture->height * (picture->depth/8));	// Calculate size if not provided
+
+	picture->buffer = (uint8_t*)AllocVec(picture->size+31, MEMF_ANY);	// allocate buffer memory with extra 31 bytes for alignment 
+	if (!picture->buffer)
+	{
+		AD(ApolloDebugPutStr( "ApolloAlloc: Buffer memory allocation ERROR\n");)
+		return APOLLO_PICTURE_MEMERROR;
+	} else {
+		AD(ApolloDebugPutStr( "ApolloAlloc: Buffer memory allocated\n");)
+	}
+
+	buffer_aligned = (uint8_t*)(((uint32_t)(picture->buffer+31) & ~31));	// align buffer to 32-byte boundary
+
+	picture->position = buffer_aligned - picture->buffer;				// Report back position of aligned buffer within allocated buffer
+
+	picture->filename = NULL;	// Clear filename to indicate memory-only picture
+	
+	AD(sprintf(ApolloDebugMessage, "ApolloAlloc: Picture Allocated: Width=%d | Height=%d | Depth=%d | Size=%d | Position=%d\n",
+		 picture->width, picture->height, picture->depth, picture->size, picture->position);)
+	AD(ApolloDebugPutStr(ApolloDebugMessage);)
+
+	return APOLLO_PICTURE_OK;
+}
+
 uint8_t ApolloLoadPicture(struct ApolloPicture *picture)
 {
 	static uint8_t *buffer_aligned = 0;						// 32-Byte aligned input buffer	
@@ -309,12 +337,11 @@ uint8_t ApolloLoadPicture(struct ApolloPicture *picture)
 				fread(&color, 1, 4, file_handle);
 				*(volatile uint32_t*)APOLLO_SAGA_CHUNKY_COL = (colorcounter<<24) + (((color >> 8) & 0xFF)<<16) + (((color >> 16) & 0xFF)<<8) + ((color >> 24) & 0xFF);
 				*(volatile uint32_t*)APOLLO_SAGA_PIPCHK_COL = (colorcounter<<24) + (((color >> 8) & 0xFF)<<16) + (((color >> 16) & 0xFF)<<8) + ((color >> 24) & 0xFF);
-
-				*(volatile uint32_t*)APOLLO_SAGA_PIPCHK_COL = 0x00FF00FF;
+				//*(volatile uint32_t*)APOLLO_SAGA_PIPCHK_COL = 0x00FF00FF;   // Enable only when Color00 = Transparent
 			}
 
 			sprintf(ApolloDebugMessage, "ApolloLoad: BMP Width=%d | Height=%d | BPP=%d | ImageSize=%d | Palette=%d\n",
-				 bmpheader.width, bmpheader.height, bmpheader.bpp, bmpheader.sizeimage, bmpheader.palette);
+				 picture->width, picture->height, picture->depth, picture->size, picture->palette);
 			ApolloDebugPutStr(ApolloDebugMessage);
 			break;
 		default:
