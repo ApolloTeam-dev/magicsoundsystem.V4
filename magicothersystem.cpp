@@ -554,6 +554,8 @@ extern "C" void *MSS_OpenScreen(int width, int height, int depth, int fullscreen
 {
 	#ifdef APOLLO
     uint32_t mode = GetMode(width,height);
+    AD(sprintf(ApolloDebugMessage, "MSS_OpenScreen: width=%d height=%d depth=%d fullscreen=%d mode=0x%08x\n", width, height, depth, fullscreen, mode);)
+    AD(ApolloDebugPutStr(ApolloDebugMessage);)
     #else
     int mode = GetMode(width, height);
     #endif
@@ -693,7 +695,7 @@ extern "C" void *MSS_OpenScreen(int width, int height, int depth, int fullscreen
         amigaScreen->pointer = 0; 
         
         #ifdef APOLLO
-        apollo_pip = {"PiP_Window", 0, 0, NULL, 0, 0, 640, 480, 8, 0, 0};
+        apollo_pip = {"PiP_Window", 0, 0, NULL, 0, 0, (uint16_t)width, (uint16_t)height, (uint8_t)depth, 0, 0};
         ApolloAlloc(&apollo_pip);
         ApolloFill(apollo_pip.buffer + apollo_pip.position, apollo_pip.width, apollo_pip.height, apollo_pip.depth, 0, 0x00);
         *(volatile LONG*)APOLLO_SAGA_PIP_POINTER = (uint32_t)(apollo_pip.buffer + apollo_pip.position);        // Set PiP Bitmap Pointer
@@ -762,8 +764,8 @@ return;
     amigaScreen->bufferToggle = !amigaScreen->bufferToggle;
 	
 	#ifdef APOLLO
-    sprintf(ApolloDebugMessage,"Flipping to Buffer: %d Writing to Buffer %d\n",amigaScreen->bufferToggle,!amigaScreen->bufferToggle);
-    ApolloDebugPutStr(ApolloDebugMessage);
+    AD(sprintf(ApolloDebugMessage,"Flipping to Buffer: %d Writing to Buffer %d\n",amigaScreen->bufferToggle,!amigaScreen->bufferToggle);)
+    AD(ApolloDebugPutStr(ApolloDebugMessage);)
     #else
     fprintf(stderr,"Flipping to Buffer: %d Writing to Buffer %d\n",amigaScreen->bufferToggle,!amigaScreen->bufferToggle);
     #endif
@@ -808,8 +810,8 @@ extern "C" void MSS_SetColors(void *screenHandle, int startCol, int skipCols, in
             colors[colorIndex++] = (ULONG)gvalues[startCol+i] * 0x01010101;  // Left-justified 8-bit green value
             colors[colorIndex++] = (ULONG)bvalues[startCol+i] * 0x01010101;  // Left-justified 8-bit blue value
         }
-        sprintf(ApolloDebugMessage,"Set Color %d: R=%02x G=%02x B=%02x\n",i,rvalues[startCol+i],gvalues[startCol+i],bvalues[startCol+i]);
-        ApolloDebugPutStr(ApolloDebugMessage);
+        AD(sprintf(ApolloDebugMessage,"Set Color %d: R=%02x G=%02x B=%02x\n",i,rvalues[startCol+i],gvalues[startCol+i],bvalues[startCol+i]);)
+        AD(ApolloDebugPutStr(ApolloDebugMessage);)
         #else
         colors[colorIndex++] = (ULONG)rvalues[startCol+i] * 0x01010101;  // Left-justified 8-bit red value
         colors[colorIndex++] = (ULONG)gvalues[startCol+i] * 0x01010101;  // Left-justified 8-bit green value
@@ -1210,8 +1212,8 @@ extern "C" void MSS_FillRect(void *screen, int col, int x, int y, int width, int
     // Fill the rectangle
     RectFill(rp, x, y, x + width - 1, y + height - 1); // Fill the rectangle
 
-    sprintf(ApolloDebugMessage,"FillRect Color: %d X: %d Y: %d W: %d H: %d\n",col,x,y,width,height);
-    ApolloDebugPutStr(ApolloDebugMessage);
+    AD(sprintf(ApolloDebugMessage,"FillRect Color: %d X: %d Y: %d W: %d H: %d\n",col,x,y,width,height);)
+    AD(ApolloDebugPutStr(ApolloDebugMessage);)
 }
 
 extern "C" void MSS_ShowCursor(int enable)

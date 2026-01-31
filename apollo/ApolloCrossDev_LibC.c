@@ -44,14 +44,14 @@ uint8_t ApolloLoadSound( struct ApolloSound *sound)
 			fseek(file_handle, 0, SEEK_SET);				
 			fread(&aiffheader, sizeof(struct AIFFHeader), 1, file_handle); 				// Read first Chunk Header
 			offset += 12;																// Increase offset with 8 = ID [LONG] + Chunk Size [LONG] + FORM Type [LONG]											
-			ApolloDebugPutHex("ApolloLoadSound: AIFF Header ID", aiffheader.ckID);
+			AD(ApolloDebugPutHex("ApolloLoadSound: AIFF Header ID", aiffheader.ckID);)
 			if( aiffheader.ckID != 0x464F524D) return APOLLO_SOUND_NOHEADER;			// 'FORM'
 			while(scanning)																
 			{
 				fseek(file_handle, offset, SEEK_SET);
 				fread(&aiffheader, sizeof(struct AIFFHeader), 1, file_handle);			// ID [LONG] + Chunk Size [LONG]
 				offset +=8 ;															// Increase offset with 8 = ID [LONG] + Chunk Size [LONG] 
-				ApolloDebugPutHex("ApolloLoadSound: AIFF Header ID", aiffheader.ckID);
+				AD(ApolloDebugPutHex("ApolloLoadSound: AIFF Header ID", aiffheader.ckID);)
 				switch(aiffheader.ckID)
 				{
 					case 0x434F4D4D: 													// 'COMM'
@@ -297,19 +297,19 @@ uint8_t ApolloLoadPicture(struct ApolloPicture *picture)
 		case APOLLO_DDS_FORMAT:
 			fseek(file_handle, 0, SEEK_SET);
 			fread(&ddsheader, sizeof(struct DDSHeader), 1, file_handle);
-			ApolloDebugPutHex("ApolloLoad: DDS Header", ddsheader.dwMagic);
+			AD(ApolloDebugPutHex("ApolloLoad: DDS Header", ddsheader.dwMagic);)
 			if( ddsheader.dwMagic != 0x44445320) return APOLLO_PICTURE_NOHEADER;
 
 			picture->width 		= ApolloSwapLong(ddsheader.dwWidth);
 			picture->height 	= ApolloSwapLong(ddsheader.dwHeight);
 			picture->depth 		= (ApolloSwapLong(ddsheader.dwPitchOrLinearSize)  / picture->width)*8;
 
-			ApolloDebugPutDec("ApolloLoad: DDS Height", picture->height);
-			ApolloDebugPutDec("ApolloLoad: DDS Width", picture->width);
-			ApolloDebugPutDec("ApolloLoad: DDS Depth", picture->depth);
+			AD(ApolloDebugPutDec("ApolloLoad: DDS Height", picture->height);)
+			AD(ApolloDebugPutDec("ApolloLoad: DDS Width", picture->width);)
+			AD(ApolloDebugPutDec("ApolloLoad: DDS Depth", picture->depth);)
 
-			sprintf(ApolloDebugMessage, "ApolloLoad: DDS Width=%d | Height=%d | Depth=%d\n", picture->width, picture->height, picture->depth);
-			ApolloDebugPutStr(ApolloDebugMessage);
+			AD(sprintf(ApolloDebugMessage, "ApolloLoad: DDS Width=%d | Height=%d | Depth=%d\n", picture->width, picture->height, picture->depth);)
+			AD(ApolloDebugPutStr(ApolloDebugMessage);)
 			offset = sizeof(struct DDSHeader);
 			picture->size = file_size-offset;
 			break;
@@ -340,9 +340,9 @@ uint8_t ApolloLoadPicture(struct ApolloPicture *picture)
 				//*(volatile uint32_t*)APOLLO_SAGA_PIPCHK_COL = 0x00FF00FF;   // Enable only when Color00 = Transparent
 			}
 
-			sprintf(ApolloDebugMessage, "ApolloLoad: BMP Width=%d | Height=%d | BPP=%d | ImageSize=%d | Palette=%d\n",
-				 picture->width, picture->height, picture->depth, picture->size, picture->palette);
-			ApolloDebugPutStr(ApolloDebugMessage);
+			AD(sprintf(ApolloDebugMessage, "ApolloLoad: BMP Width=%d | Height=%d | BPP=%d | ImageSize=%d | Palette=%d\n",
+				 picture->width, picture->height, picture->depth, picture->size, picture->palette);)
+			AD(ApolloDebugPutStr(ApolloDebugMessage);)
 			break;
 		default:
 			picture->size = file_size;
@@ -391,7 +391,7 @@ uint8_t ApolloLoadPicture(struct ApolloPicture *picture)
 
 	if(picture->endian)
 	{
-		AD( ApolloDebugPutStr( "ApolloLoad: Converting to Big Endian format\n"); )
+		AD(ApolloDebugPutStr( "ApolloLoad: Converting to Big Endian format\n"); )
 
 		uint8_t *buffer_pixel;
 
@@ -463,9 +463,9 @@ uint8_t ApolloLoadPicture(struct ApolloPicture *picture)
 		}
 	}
 
-	sprintf(ApolloDebugMessage, "ApolloLoad: Picture File Loaded: %s | Filesize = %d | Format: %d | Size = %d BYTES | Width = %d | Height = %d | Depth = %d | Palette = %d | Position = %d | Offset = %d\n",
-		 picture->filename, file_size, picture->format, picture->size, picture->width, picture->height, picture->depth, picture->palette, picture->position, offset);
-	ApolloDebugPutStr(ApolloDebugMessage);
+	AD(sprintf(ApolloDebugMessage, "ApolloLoad: Picture File Loaded: %s | Filesize = %d | Format: %d | Size = %d BYTES | Width = %d | Height = %d | Depth = %d | Palette = %d | Position = %d | Offset = %d\n",
+		 picture->filename, file_size, picture->format, picture->size, picture->width, picture->height, picture->depth, picture->palette, picture->position, offset);)
+	AD(ApolloDebugPutStr(ApolloDebugMessage);)
 
 	return APOLLO_PICTURE_OK;
 }

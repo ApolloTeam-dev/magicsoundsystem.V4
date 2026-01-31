@@ -160,6 +160,9 @@ int  DLL_Init(void)
     #ifdef APOLLO_DEBUG
 	ApolloDebugInit();
 	ApolloDebugPutStr("Apollo Serial Debug ******************************************************\n");
+	#define AD(x) x
+	#else
+	#define AD(x)
 	#endif	
 	
 	return 1L;
