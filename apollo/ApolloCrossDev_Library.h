@@ -47,6 +47,7 @@ struct ApolloPicture
     uint32_t    palette;
     // Display Values
     int16_t     modulo;
+    bool        fullscreen;
 };
 
 uint8_t ApolloAlloc( struct ApolloPicture *picture);

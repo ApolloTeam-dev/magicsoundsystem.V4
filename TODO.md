@@ -5,4 +5,7 @@ TODO
 - Audio functions
 - New samples?
 - Leaflet
+- Update Riva
+- Update Icon
+
 
