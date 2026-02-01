@@ -16,12 +16,6 @@
 
 
 #ifdef APOLLO
-bool apollo_v4 = true;
-#else
-bool apollo_v4 = false;
-#endif	
-
-#ifdef APOLLO
 char __attribute__((used)) stackcookie[] = "$STACK: 2000000";
 const char *version_tag = "$VER: 3.11 MagicSystem.dll (Apollo V4, 29.01.2026) by Steffen \"MagicSN\" Haeuser";
 #else
@@ -73,7 +67,12 @@ int thechannels;
 int thefrequency;
 int theformat;
 int thesamples;
+
+#ifdef APOLLO
+int streamThreshold = 100 * 1024 * 1024;
+#else
 int streamThreshold = 1024 * 1024;
+#endif
 
 struct Library *MPEGABase = 0;
 
@@ -1160,7 +1159,9 @@ int LoadWAVStreaming(const char *file, SoundItem *sound)
 
 extern "C" void MSS_SetStreamThreshold(int threshold)
 {
+	#ifndef APOLLO
 	streamThreshold = threshold;
+	#endif
 }
 
 extern "C" void *MSS_LoadSample(const char* name)
@@ -1229,7 +1230,7 @@ extern "C" void *MSS_LoadSample(const char* name)
 			long fileSize = ftell(thefile);
 			fclose(thefile);				
 			
-			if ((fileSize > streamThreshold) && (streamThreshold != 0) &&(!apollo_v4))
+			if ((fileSize > streamThreshold) && (streamThreshold != 0))
 			{ 
 				if (LoadWAVStreaming(wavpath, sound) != 1) 
 				{

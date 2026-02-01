@@ -33,9 +33,7 @@
 
 #ifdef APOLLO
 extern char ApolloDebugMessage[200];
-ULONG *Apollo_PiP_Screen;
 ULONG FrameCounter = 0;
-extern bool apollo_v4;
 #endif
 
 struct Screen *wbScreen;
@@ -1038,9 +1036,6 @@ extern "C" void MSS_PumpEvents()
                             {
                                 ApolloShowPiP(&apollo_pip);
                                 ApolloShowPicture(&apollo_wbscreen);
-                                //*(volatile LONG*)APOLLO_SAGA_POINTER = (uint32_t)(amigaScreen->screen->RastPort.BitMap->Planes[0]);
-                                //*(volatile uint16_t*)APOLLO_SAGA_GFXMODE = 0x0A04; // Set SAGA Gfxmode to 1280x720x24-Bit
-                                //*(volatile uint16_t*)APOLLO_SAGA_MODULO = 0;
                             }
                         }
                         #endif
