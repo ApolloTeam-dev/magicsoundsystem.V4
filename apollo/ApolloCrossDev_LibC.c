@@ -5,7 +5,43 @@
 
 extern char ApolloDebugMessage[200];
 
-// ApolloSound Functions ######################################
+// Apollo Sound Functions 
+
+uint8_t ApolloAllocSound( struct ApolloSound *sound)
+{
+	uint8_t *buffer_aligned = 0;	// 32-Byte aligned input buffer
+	
+	sound->buffer = (uint8_t*)AllocVec(sound->size+31, MEMF_ANY);	// allocate buffer memory with extra 31 bytes for alignment 
+	if (!sound->buffer)
+	{
+		AD(ApolloDebugPutStr( "ApolloAllocPicture: Buffer memory allocation ERROR\n");)
+		return APOLLO_PICTURE_MEMERROR;
+	} else {
+		AD(ApolloDebugPutStr( "ApolloAllocPicture: Buffer memory allocated\n");)
+	}
+
+	buffer_aligned = (uint8_t*)(((uint32_t)(sound->buffer+31) & ~31));	// align buffer to 32-byte boundary
+
+	sound->position = buffer_aligned - sound->buffer;				// Report back position of aligned buffer within allocated buffer
+
+	sound->filename = NULL;	// Clear filename to indicate memory-only sound
+	
+	AD(sprintf(ApolloDebugMessage, "ApolloAllocSound: Sound Allocated: Size=%d | Position=%d\n",
+		 sound->size, sound->position);)
+	AD(ApolloDebugPutStr(ApolloDebugMessage);)
+
+	return APOLLO_SOUND_OK;
+}
+
+void ApolloFreeSound( struct ApolloSound *sound)
+{
+	if (sound->buffer)
+	{
+		FreeVec(sound->buffer);					
+		sound->buffer = NULL;
+		AD(ApolloDebugPutStr( "ApolloFreeSound: Buffer memory freed\n");)
+	}
+}
 
 uint8_t ApolloLoadSound( struct ApolloSound *sound)
 {
@@ -233,10 +269,9 @@ void ApolloFadeOutSound(struct ApolloSound *sound)
 	ApolloStopSound(sound);
 }
 
+// Apollo Picture Functions 
 
-// ApolloPicture Functions ######################################
-
-uint8_t ApolloAlloc( struct ApolloPicture *picture)
+uint8_t ApolloAllocPicture( struct ApolloPicture *picture)
 {
 	uint8_t *buffer_aligned = 0;	// 32-Byte aligned input buffer
 	
@@ -245,10 +280,10 @@ uint8_t ApolloAlloc( struct ApolloPicture *picture)
 	picture->buffer = (uint8_t*)AllocVec(picture->size+31, MEMF_ANY);	// allocate buffer memory with extra 31 bytes for alignment 
 	if (!picture->buffer)
 	{
-		AD(ApolloDebugPutStr( "ApolloAlloc: Buffer memory allocation ERROR\n");)
+		AD(ApolloDebugPutStr( "ApolloAllocPicture: Buffer memory allocation ERROR\n");)
 		return APOLLO_PICTURE_MEMERROR;
 	} else {
-		AD(ApolloDebugPutStr( "ApolloAlloc: Buffer memory allocated\n");)
+		AD(ApolloDebugPutStr( "ApolloAllocPicture: Buffer memory allocated\n");)
 	}
 
 	buffer_aligned = (uint8_t*)(((uint32_t)(picture->buffer+31) & ~31));	// align buffer to 32-byte boundary
@@ -257,11 +292,21 @@ uint8_t ApolloAlloc( struct ApolloPicture *picture)
 
 	picture->filename = NULL;	// Clear filename to indicate memory-only picture
 	
-	AD(sprintf(ApolloDebugMessage, "ApolloAlloc: Picture Allocated: Width=%d | Height=%d | Depth=%d | Size=%d | Position=%d\n",
+	AD(sprintf(ApolloDebugMessage, "ApolloAllocPicture: Picture Allocated: Width=%d | Height=%d | Depth=%d | Size=%d | Position=%d\n",
 		 picture->width, picture->height, picture->depth, picture->size, picture->position);)
 	AD(ApolloDebugPutStr(ApolloDebugMessage);)
 
 	return APOLLO_PICTURE_OK;
+}
+
+void ApolloFreePicture( struct ApolloPicture *picture)
+{
+	if (picture->buffer)
+	{
+		FreeVec(picture->buffer);					
+		picture->buffer = NULL;
+		AD(ApolloDebugPutStr( "ApolloFreePicture: Buffer memory freed\n");)
+	}
 }
 
 uint8_t ApolloLoadPicture(struct ApolloPicture *picture)
@@ -474,6 +519,10 @@ uint8_t ApolloShowPicture(struct ApolloPicture *picture)
 {
 	uint16_t gfx_mode = 0;
 	
+	sprintf(ApolloDebugMessage, "ApolloShow: Showing Picture: Width=%d | Height=%d | Depth=%d | Modulo=%d | Position=%d\n",
+		 picture->width, picture->height, picture->depth, picture->modulo, picture->position);
+	AD(ApolloDebugPutStr(ApolloDebugMessage);)
+
 	switch(picture->depth)
 	{
 		case 8 : gfx_mode |= APOLLO_SAGA_8_INDEX; break;
@@ -542,6 +591,16 @@ uint8_t ApolloShowPicture(struct ApolloPicture *picture)
 	*((volatile uint32_t*)0xDFF1EC) = (uint32_t)(picture->buffer + picture->position);
 }
 
+void ApolloShowPiP( struct ApolloPicture *picture)
+{
+	 *(volatile int16_t*)APOLLO_SAGA_PIP_DMAROWS = picture->width * (picture->depth/8); 
+}
+
+void ApolloHidePiP()
+{
+	*(volatile int16_t*)APOLLO_SAGA_PIP_DMAROWS = 0;
+}
+
 void ApolloShowPattern(uint8_t *buffer, uint16_t width, uint16_t height, uint8_t depth)
 {
     uint8_t d=depth/8;
@@ -568,7 +627,7 @@ void ApolloShowPattern(uint8_t *buffer, uint16_t width, uint16_t height, uint8_t
     }
 }
 
-// Apollo CPU Functions ######################################
+// Apollo CPU Functions
 
 void ApolloWaitVBL()
 {
