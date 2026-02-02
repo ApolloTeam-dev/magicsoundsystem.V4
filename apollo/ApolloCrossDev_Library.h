@@ -13,7 +13,7 @@ extern "C"{
 struct ApolloSound
 {
     // Input Values
-    char        *filename;
+    char  filename[25];
     uint8_t     format;
     bool        loop;
     bool        fadein;

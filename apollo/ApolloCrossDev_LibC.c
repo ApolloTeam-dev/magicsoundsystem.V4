@@ -24,7 +24,7 @@ uint8_t ApolloAllocSound( struct ApolloSound *sound)
 
 	sound->position = buffer_aligned - sound->buffer;				// Report back position of aligned buffer within allocated buffer
 
-	sound->filename = NULL;	// Clear filename to indicate memory-only sound
+	sound->filename[0] = 0;	// Clear filename to indicate memory-only sound
 	
 	AD(sprintf(ApolloDebugMessage, "ApolloAllocSound: Sound Allocated: Size=%d | Position=%d\n",
 		 sound->size, sound->position);)
@@ -39,7 +39,7 @@ void ApolloFreeSound( struct ApolloSound *sound)
 	{
 		FreeVec(sound->buffer);					
 		sound->buffer = NULL;
-		AD(ApolloDebugPutStr( "ApolloFreeSound: Buffer memory freed\n");)
+		ADX(ApolloDebugPutStr( "ApolloFreeSound: Buffer memory freed\n");)
 	}
 }
 
@@ -60,16 +60,16 @@ uint8_t ApolloLoadSound( struct ApolloSound *sound)
 	struct AIFFHeader aiffheader;
 	struct WAVHeader wavheader;
 
-	AD(sprintf(ApolloDebugMessage, "ApolloLoadSound: Opening File = %s", sound->filename);)
-    AD(ApolloDebugPutStr(ApolloDebugMessage);)
+	ADX(sprintf(ApolloDebugMessage, "ApolloLoadSound: Opening File = %s", sound->filename);)
+    ADX(ApolloDebugPutStr(ApolloDebugMessage);)
 
     file_handle = fopen(sound->filename, "rb");
     if (!file_handle)
     {
-	   	AD(ApolloDebugPutStr( "= ERROR\n");)
+	   	ADX(ApolloDebugPutStr( "= ERROR\n");)
 	    return APOLLO_SOUND_LOADERROR;
     } else {
-		AD(ApolloDebugPutStr( "= SUCCESS\n");)
+		ADX(ApolloDebugPutStr( "= SUCCESS\n");)
     }
 
     fseek(file_handle, 0, SEEK_END);													// Goto end of file
@@ -80,7 +80,7 @@ uint8_t ApolloLoadSound( struct ApolloSound *sound)
 		case APOLLO_AIFF_FORMAT:							
 			fseek(file_handle, 0, SEEK_SET);				
 			fread(&aiffheader, sizeof(struct AIFFHeader), 1, file_handle); 				// Read first Chunk Header
-			offset += 8;																// Increase offset with 8 = ID [LONG] + File Size [LONG]]											
+			offset += 12;																// Increase offset with 8 = ID [LONG] + File Size [LONG] + FORM Type [LONG]											
 			if( aiffheader.file_id != 0x464F524D) return APOLLO_SOUND_NOHEADER;			// 'FORM'
 			while(scanning)																
 			{
@@ -101,7 +101,7 @@ uint8_t ApolloLoadSound( struct ApolloSound *sound)
 						break;
 
 					case 0x53534E44: 													// 'SSND'
-						fread(&sample_offset, sizeof(uint32_t), 1, file_handle); 		//
+						fread(&sample_offset, sizeof(uint32_t), 1, file_handle); 		
 						fseek(file_handle, aiffheader.chunk_size - 8 + sample_offset, SEEK_SET);
 						offset +=4;
 						sound->size = aiffheader.chunk_size - 8 - sample_offset;
@@ -110,7 +110,7 @@ uint8_t ApolloLoadSound( struct ApolloSound *sound)
 						break;
 
 					default:
-						offset += aiffheader.chunk_size;									// Skip chunk
+						offset += aiffheader.chunk_size;								// Skip chunk
 						if(offset >= file_size) return APOLLO_SOUND_ENDOFFILE;			// Reached end of file without finding SSND chunk
 						break;
 				}
@@ -142,35 +142,35 @@ uint8_t ApolloLoadSound( struct ApolloSound *sound)
 	sound->buffer = (uint8_t*)AllocVec(file_size+31, MEMF_ANY);	// allocate buffer memory with extra 31 bytes for alignment 
     if (!sound->buffer)
     {
-    	AD(ApolloDebugPutStr( "ApolloLoadSound: Buffer memory allocation ERROR\n");)
+    	ADX(ApolloDebugPutStr( "ApolloLoadSound: Buffer memory allocation ERROR\n");)
 		return APOLLO_SOUND_MEMERROR;
     } else {
-		AD(ApolloDebugPutStr( "ApolloLoadSound: Buffer memory allocated\n");)
+		ADX(ApolloDebugPutStr( "ApolloLoadSound: Buffer memory allocated\n");)
     }
 
 	buffer_aligned = (uint8_t*)(((uint32_t)(sound->buffer+31) & ~31));	// align buffer to 32-byte boundary
 
-	AD(ApolloDebugPutStr("ApolloLoadSound: Reading file -> ");)
+	ADX(ApolloDebugPutStr("ApolloLoadSound: Reading file -> ");)
 
 	file_read = fread(buffer_aligned, 1, sound->size, file_handle);	// Read file into aligned buffer	
     if(file_read != sound->size)
     {
-	   	AD(ApolloDebugPutStr( "ERROR: Cannot load file\n");)
+	   	ADX(ApolloDebugPutStr( "ERROR: Cannot load file\n");)
 		FreeVec(sound->buffer);					
 	    return APOLLO_SOUND_LOADERROR;
     } else {
-	   	AD(ApolloDebugPutStr( "SUCCESS: File loaded\n");)
+	   	ADX(ApolloDebugPutStr( "SUCCESS: File loaded\n");)
     }
 
-    AD(ApolloDebugPutStr("ApolloLoadSound: Closing file -> ");)
+    ADX(ApolloDebugPutStr("ApolloLoadSound: Closing file -> ");)
 
     if (fclose(file_handle) == EOF)
     {
-	   	AD(ApolloDebugPutStr( "ERROR: Cannot close file\n");)
+	   	ADX(ApolloDebugPutStr( "ERROR: Cannot close file\n");)
 		FreeVec(sound->buffer);
 		return APOLLO_SOUND_CLOSEERR;					
     } else {
-	   	AD(ApolloDebugPutStr( "SUCCESS: File closed\n");)
+	   	ADX(ApolloDebugPutStr( "SUCCESS: File closed\n");)
     }
 
 	sound->position = buffer_aligned-sound->buffer;				// Report back position of aligned buffer within allocated buffer
@@ -294,10 +294,10 @@ uint8_t ApolloAllocPicture( struct ApolloPicture *picture)
 	picture->buffer = (uint8_t*)AllocVec(picture->size+31, MEMF_ANY);	// allocate buffer memory with extra 31 bytes for alignment 
 	if (!picture->buffer)
 	{
-		AD(ApolloDebugPutStr( "ApolloAllocPicture: Buffer memory allocation ERROR\n");)
+		ADX(ApolloDebugPutStr( "ApolloAllocPicture: Buffer memory allocation ERROR\n");)
 		return APOLLO_PICTURE_MEMERROR;
 	} else {
-		AD(ApolloDebugPutStr( "ApolloAllocPicture: Buffer memory allocated\n");)
+		ADX(ApolloDebugPutStr( "ApolloAllocPicture: Buffer memory allocated\n");)
 	}
 
 	buffer_aligned = (uint8_t*)(((uint32_t)(picture->buffer+31) & ~31));	// align buffer to 32-byte boundary
@@ -319,7 +319,7 @@ void ApolloFreePicture( struct ApolloPicture *picture)
 	{
 		FreeVec(picture->buffer);					
 		picture->buffer = NULL;
-		AD(ApolloDebugPutStr( "ApolloFreePicture: Buffer memory freed\n");)
+		ADX(ApolloDebugPutStr( "ApolloFreePicture: Buffer memory freed\n");)
 	}
 }
 

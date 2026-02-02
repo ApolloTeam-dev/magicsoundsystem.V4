@@ -758,7 +758,13 @@ extern "C" void *MSS_OpenScreen(int width, int height, int depth, int fullscreen
     // Return the structure as a void pointer
 
     #ifdef APOLLO
-    AD(sprintf(ApolloDebugMessage, "Initialize Apollo SAGA PiP\n");)
+
+    AD(sprintf(ApolloDebugMessage, "Apollo InitPiP: XSTART=%d | XSTOP=%d | YSTART=%d | YSTOP=%d | GFXMODE=%x | MODULO = %d | CLRKEY=%x\n",
+        (amigaScreen->window->LeftEdge + amigaScreen->window->BorderLeft +16),
+        (amigaScreen->window->LeftEdge + + amigaScreen->window->BorderLeft + apollo_pip.width +16),
+        amigaScreen->window->TopEdge + amigaScreen->window->BorderTop -1,
+        amigaScreen->window->TopEdge + amigaScreen->window->BorderTop + apollo_pip.height -1,
+        APOLLO_SAGA_8_INDEX, 0, 0x0000););
     AD(ApolloDebugPutStr(ApolloDebugMessage);)
     *(volatile LONG*)APOLLO_SAGA_PIP_POINTER = (uint32_t)(apollo_pip.buffer + apollo_pip.position);                                                 // Set PiP Bitmap Pointer
     *(volatile int16_t*)APOLLO_SAGA_PIP_X_START = (amigaScreen->window->LeftEdge + amigaScreen->window->BorderLeft +16) ;                           // Set PiP X Start Position (+16 pixel correction needed) 
@@ -768,9 +774,6 @@ extern "C" void *MSS_OpenScreen(int width, int height, int depth, int fullscreen
     *(volatile int16_t*)APOLLO_SAGA_PIP_GFXMODE = APOLLO_SAGA_8_INDEX;                                                                              // Match Apollo SAGA with PiP Overlay Bitmap format                         
     *(volatile int16_t*)APOLLO_SAGA_PIP_MODULO = 0;                                                                                                 // No Modulo (PiP Bitmap width matches PiP Window width)                                   
     *(volatile int16_t*)APOLLO_SAGA_PIP_CLRKEY = 0x0000;                                                                                            // Colorkey = 0 -> ChromKey mode disable -> Overlay Mode Enabled
-
-    AD(sprintf(ApolloDebugMessage, "Enable Apollo SAGA Display\n");)
-    AD(ApolloDebugPutStr(ApolloDebugMessage);)
 
     if(apollo_pip.fullscreen)
     {
@@ -1260,8 +1263,8 @@ extern "C" void MSS_FillRect(void *screen, int col, int x, int y, int width, int
 
     #ifdef APOLLO
     ApolloFill(apollo_pip.buffer + apollo_pip.position + x + (y * apollo_pip.width), width, height, apollo_pip.depth, 0, col);
-    AD(sprintf(ApolloDebugMessage,"FillRect Color: %d X: %d Y: %d W: %d H: %d\n",col,x,y,width,height);)
-    AD(ApolloDebugPutStr(ApolloDebugMessage);)
+    ADX(sprintf(ApolloDebugMessage,"FillRect Color: %d X: %d Y: %d W: %d H: %d\n",col,x,y,width,height);)
+    ADX(ApolloDebugPutStr(ApolloDebugMessage);)
     return; 
     #endif
 
