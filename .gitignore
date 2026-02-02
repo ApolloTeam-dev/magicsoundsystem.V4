@@ -1,1 +1,4 @@
 magicsystem.dll
+*.o
+apollo/*.o
+apollo.backup

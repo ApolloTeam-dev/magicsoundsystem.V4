@@ -26,6 +26,9 @@ struct ApolloSound
     uint32_t    size;
     uint16_t    period;
     uint8_t     channel;
+    bool        stereo;
+    uint32_t    datarate;
+    uint16_t    bitspersample;
 };
 struct ApolloPicture
 {
@@ -95,8 +98,25 @@ struct DDSHeader
 };
 struct AIFFHeader
 {
-    uint32_t    ckID;
-    uint32_t    ckSize;
+    uint32_t    file_id;
+    uint32_t    chunk_size;
+};
+
+struct WAVHeader
+{
+    uint32_t    file_id;
+    uint32_t    file_size;
+    uint32_t    wave_id;
+    uint32_t    fmt_id;
+    uint32_t    fmt_size;
+    uint16_t    audio_format;
+    uint16_t    num_channels;
+    uint32_t    sample_rate;
+    uint32_t    byte_rate;
+    uint16_t    block_align;
+    uint16_t    bits_per_sample;
+    uint32_t    data_id;
+    uint32_t    data_size;
 };
 
 // ApolloCrossDev C Functions ######################################

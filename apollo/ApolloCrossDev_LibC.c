@@ -58,6 +58,7 @@ uint8_t ApolloLoadSound( struct ApolloSound *sound)
 	uint32_t offset = 0; 
 	
 	struct AIFFHeader aiffheader;
+	struct WAVHeader wavheader;
 
 	AD(sprintf(ApolloDebugMessage, "ApolloLoadSound: Opening File = %s", sound->filename);)
     AD(ApolloDebugPutStr(ApolloDebugMessage);)
@@ -79,16 +80,14 @@ uint8_t ApolloLoadSound( struct ApolloSound *sound)
 		case APOLLO_AIFF_FORMAT:							
 			fseek(file_handle, 0, SEEK_SET);				
 			fread(&aiffheader, sizeof(struct AIFFHeader), 1, file_handle); 				// Read first Chunk Header
-			offset += 12;																// Increase offset with 8 = ID [LONG] + Chunk Size [LONG] + FORM Type [LONG]											
-			AD(ApolloDebugPutHex("ApolloLoadSound: AIFF Header ID", aiffheader.ckID);)
-			if( aiffheader.ckID != 0x464F524D) return APOLLO_SOUND_NOHEADER;			// 'FORM'
+			offset += 8;																// Increase offset with 8 = ID [LONG] + File Size [LONG]]											
+			if( aiffheader.file_id != 0x464F524D) return APOLLO_SOUND_NOHEADER;			// 'FORM'
 			while(scanning)																
 			{
 				fseek(file_handle, offset, SEEK_SET);
 				fread(&aiffheader, sizeof(struct AIFFHeader), 1, file_handle);			// ID [LONG] + Chunk Size [LONG]
 				offset +=8 ;															// Increase offset with 8 = ID [LONG] + Chunk Size [LONG] 
-				AD(ApolloDebugPutHex("ApolloLoadSound: AIFF Header ID", aiffheader.ckID);)
-				switch(aiffheader.ckID)
+				switch(aiffheader.file_id)
 				{
 					case 0x434F4D4D: 													// 'COMM'
 						offset += 8;													// Increase offset with 8 = NumChannels [WORD] + NumSampleFrames [LONG] + SampleSize [WORD]
@@ -103,19 +102,34 @@ uint8_t ApolloLoadSound( struct ApolloSound *sound)
 
 					case 0x53534E44: 													// 'SSND'
 						fread(&sample_offset, sizeof(uint32_t), 1, file_handle); 		//
-						fseek(file_handle, aiffheader.ckSize - 8 + sample_offset, SEEK_SET);
+						fseek(file_handle, aiffheader.chunk_size - 8 + sample_offset, SEEK_SET);
 						offset +=4;
-						sound->size = aiffheader.ckSize - 8 - sample_offset;
-						offset += 4 + sample_offset;						
+						sound->size = aiffheader.chunk_size - 8 - sample_offset;
+						offset +=4 + sample_offset;						
 						scanning = false;
 						break;
 
 					default:
-						offset += aiffheader.ckSize;									// Skip chunk
+						offset += aiffheader.chunk_size;									// Skip chunk
 						if(offset >= file_size) return APOLLO_SOUND_ENDOFFILE;			// Reached end of file without finding SSND chunk
 						break;
 				}
 			}
+			break;
+
+		case APOLLO_WAV_FORMAT:							
+			fseek(file_handle, 0, SEEK_SET);				
+			fread(&wavheader, sizeof(struct WAVHeader), 1, file_handle); 				// Read first Chunk Header
+			offset += sizeof(struct WAVHeader);											// Increase offset with 44 Byte Header size
+			if( wavheader.file_id != 0x52494646) return APOLLO_SOUND_NOHEADER;			// 'RIFF'
+			sound->size = ApolloSwapLong(wavheader.file_size) - 36;						// Set size to filesize minus 44 Byte WAV Header - 8 Byte (file_id[4] + filesize[4])
+			if( wavheader.wave_id != 0x57415645) return APOLLO_SOUND_NOHEADER;			// 'WAVE'
+			if( wavheader.fmt_id != 0x666d7420) return APOLLO_SOUND_NOHEADER;			// 'fmt '
+			if( ApolloSwapWord(wavheader.audio_format) != 1) return APOLLO_SOUND_COMPRERR;				// PCM only supported
+			if( ApolloSwapWord(wavheader.num_channels) == 2) sound->stereo = true; else sound->stereo = false;
+			sound->period = (APOLLO_PAL_CLOCK / ApolloSwapLong(wavheader.sample_rate));	// Calculate Period from SampleRate
+			sound->datarate = ApolloSwapLong(wavheader.byte_rate);
+			sound->bitspersample = ApolloSwapWord(wavheader.bits_per_sample);
 			break;
 
 		default:
