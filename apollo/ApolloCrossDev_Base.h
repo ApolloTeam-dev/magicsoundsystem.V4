@@ -34,6 +34,7 @@
 // Apollo Audi (ARNE)
 #define APOLLO_PAL_CLOCK        3546895   // PAL Clock Frequency in Hz
 #define APOLLO_NTSC_CLOCK       3579545   // NTSC Clock Frequency in Hz
+#define APOLLO_AIFF_OFFSET		48        // AIFF File Data Offset in Bytes - Used only by ApolloLoad, ApolloLoadSound reads Offset from AIFF Fikle Header
 
 // Apollo File Header Markers
 #define APOLLO_RAW_FORMAT       0x0 

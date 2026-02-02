@@ -213,6 +213,133 @@ uint8_t ApolloPlaySound( struct ApolloSound *sound)
 	return APOLLO_SOUND_OK;
 }
 
+void ApolloLoad(const char *filename, uint8_t **buffer, int*position, uint32_t *lenght, uint16_t offset)
+{
+	static uint8_t *buffer_aligned = 0;						// 64-bit aligned input buffer	
+	
+	static unsigned long file_size = 0;    					// length of file
+	static unsigned long file_read = 0;   					// bytes read from file
+	static FILE *file_handle = 0;          					// stream of file 
+
+	//AD(ApolloDebugPutStr("ApolloLoad: Opening File = ");)
+	//AD(ApolloDebugPutStr(filename);)
+
+    file_handle = fopen(filename, "rb");
+    if (!file_handle)
+    {
+	   	//AD(ApolloDebugPutStr( "=ERROR\n");)
+	    return;
+    } else {
+		//AD(ApolloDebugPutStr( "=SUCCESS\n");)
+    }
+
+    fseek(file_handle, 0, SEEK_END);						// goto end of file
+    file_size=ftell(file_handle);							// retrieve filesize
+
+	fseek(file_handle, offset, SEEK_SET);
+	file_size-=offset;
+
+    //AD(sprintf(ApolloDebugMessage,"ApolloLoad: Audio Data Size = %d BYTES\n", file_size);)
+    //AD(ApolloDebugPutStr(ApolloDebugMessage);)
+
+	*buffer = (uint8_t*)AllocVec(file_size+15, MEMF_ANY);
+    
+    if (!*buffer)
+    {
+    	//AD(ApolloDebugPutStr( "Apollo_DEBUGLoad: buffer memory ERROR\n");)
+		return;
+    } else {
+		//AD(ApolloDebugPutStr( "ApolloLoad: buffer memory allocated\n");)
+    }
+
+	memset(*buffer, 0, file_size+15);
+
+	buffer_aligned = (uint8_t*)(((uint32_t)(*buffer+15) & 0xFFFFFFF0));
+
+	//AD(ApolloDebugPutStr("ApolloLoad: Reading file -> ");)
+
+	file_read = fread(buffer_aligned, 1, file_size, file_handle);
+    if(file_read != file_size)
+    {
+		//AD(ApolloDebugPutStr( "ERROR: cannot load file\n");)
+		return;
+    } else {
+	   	//AD(ApolloDebugPutStr( "SUCCESS: file loaded\n");)
+	}
+
+	//AD(ApolloDebugPutStr("ApolloLoad: Closing file -> ");)
+
+    if (fclose(file_handle) == EOF)
+    {
+		//AD(ApolloDebugPutStr( "ERROR: cannot close file\n");)
+	
+    } else {
+		//AD(ApolloDebugPutStr( "SUCCESS: file closed\n");)
+	}
+
+	*lenght = file_size;
+	*position = buffer_aligned-*buffer;
+
+	AD(sprintf(ApolloDebugMessage, "ApolloLoad: filename = %s | buffer = 0x%x | aligned buffer = 0x%x | position = %d | filesize =%d |\n", filename, *buffer, buffer_aligned, *position, *lenght);)
+	AD(ApolloDebugPutStr(ApolloDebugMessage);)
+
+}
+
+bool ApolloPlay(int channel, int volume_left, int volume_right, bool loop, bool fadein, uint8_t *buffer, uint32_t lenght, uint16_t period, int *channel_chosen)
+{
+	bool channelfree;
+	// Choose Channel
+	if(channel)
+	{
+		// Check if channel is free
+		if ( ( (channel < 4) && (*((volatile uint16_t*)0xDFF002) & (1<<channel)) ) || ( (channel >=4) && (*((volatile uint16_t*)0xDFF202) & (1<<channel)) ) )
+		{
+			AD(ApolloDebugPutStr("ApolloPlay: ERROR = Requested Channel is BUSY\n");)
+			return false;
+		}
+	} else {
+		for (channel=0; channel<16; channel++)
+		{
+			channelfree = ( ( (channel < 4) && ( (*((volatile uint16_t*)0xDFF002) & (1<<channel)) == 0) ) || ( (channel >=4) && (*((volatile uint16_t*)0xDFF202) & (1<<channel)) == 0 ) );
+			//AD(sprintf(ApolloDebugMessage, "ApolloPlay: channel = %d | DMA Channel Free = %s\n", channel, channelfree? "YES":"NO");)
+			//AD(ApolloDebugPutStr(ApolloDebugMessage);)
+			if (channelfree)  break;
+		}
+		if(channel==16)
+		{
+			AD(ApolloDebugPutStr("ApolloPlay: ERROR = NO Free Channel Found\n");)
+			return false;
+		}
+	}
+
+	AD(sprintf(ApolloDebugMessage, "ApolloPlay: Buffer = 0x%x | Channel = %d | Lenght = %d | Vol-L = %d | Vol-R = %d | Loop = %d | Fadein = %d | Period = %d\n", buffer, channel, lenght, volume_left, volume_right, loop, fadein, period);)
+	AD(ApolloDebugPutStr(ApolloDebugMessage);)
+
+	*((volatile uint32_t*)(0xDFF400 + (channel * 0x10))) = (uint32_t)buffer;        	   	// Set Channel Pointer
+	*((volatile uint32_t*)(0xDFF404 + (channel * 0x10))) = (uint32_t)((lenght/8)-32);	// Set Channel Music Lenght (in pairs of stereo sample = 2 * 2 * 16-bit = 64-bit chunksize = filesize in bytes / 8)
+	
+	ApolloVolume(channel, volume_left, volume_right);
+
+	if (loop)
+	{
+		*((volatile uint16_t*)(0xDFF40A + (channel * 0x10))) = (uint16_t)0x0005;            // %0101 = $05 - Sample 16bit (bit0 = 1) / OneShot Disabled (bit1 = 0) / Stereo Enabled (bit2 = 1)
+	} else {
+		*((volatile uint16_t*)(0xDFF40A + (channel * 0x10))) = (uint16_t)0x0007;            // %0111 = $07 - Sample 16bit (bit0 = 1) / OneShot Enabled (bit1 = 1) / Stereo Enabled (bit2 = 1)
+	}
+	*((volatile uint16_t*)(0xDFF40C + (channel * 0x10))) = (uint16_t)period;					// PERIOD=44.1 Khz
+	if (channel < 4)
+	{ 
+		*((volatile uint16_t*)0xDFF096) = (uint16_t)(0x8000) + (1<<channel);                // DMACON = enable DMA and enable DMA for specific channel AUD0-3 (start current stream)    
+	} else {
+		*((volatile uint16_t*)0xDFF296) = (uint16_t)(0x8000) + (1<<(channel-4));            // DMACON = enable DMA and enable DMA for specific channel AUD4-15 (start current stream)       
+	}
+
+	if(fadein)
+	{
+		ApolloFadeIn(channel, 0x00, (volume_left+volume_right)/2);
+	} 
+}
+
 void ApolloStopSound(struct ApolloSound *sound)
 {
 	AD(ApolloDebugPutDec("ApolloStop: Stopping audio on channel", sound->channel);)
@@ -237,11 +364,44 @@ void ApolloStartSound(struct ApolloSound *sound)
 	}
 }
 
+void ApolloStop(int channel)
+{
+	AD(ApolloDebugPutDec("ApolloStop: Stopping audio on channel", channel);)
+	
+	if (channel < 4)
+	{ 
+		*((volatile uint16_t*)0xDFF096) = (uint16_t)(0x0000) + (1<<channel);                // DMACON = clear AUD0-3 (stop current stream)    
+	} else {
+		*((volatile uint16_t*)0xDFF296) = (uint16_t)(0x0000) + (1<<(channel-4));            // DMACON2 = clear AUD4-15 (stop current stream)      
+	}
+}
+
+void ApolloStart(int channel)
+{
+	AD(ApolloDebugPutDec("ApolloStop: Starting audio on channel", channel);)
+	
+	if (channel < 4)
+	{ 
+		*((volatile uint16_t*)0xDFF096) = (uint16_t)(0x8000) + (1<<channel);                // DMACON = enable AUD0-3 (start current stream)    
+	} else {
+		*((volatile uint16_t*)0xDFF296) = (uint16_t)(0x8000) + (1<<(channel-4));            // DMACON2 = enable AUD4-15 (start current stream)      
+	}
+}
+
 void ApolloVolumeSound(struct ApolloSound *sound)
 {
 	int volume = (sound->volume_left << 8) + (sound->volume_right);
 
 	*((volatile uint16_t*)(0xDFF408 + (sound->channel * 0x10))) = (uint16_t)volume;                // Set Channel Volume (0-FF / 0-FF) 
+}
+
+void ApolloVolume(int channel, int volume_left, int volume_right)
+{
+	int volume = (volume_left << 8) + (volume_right);
+
+	//AD(ApolloDebugPutHex("ApolloPlay: Volume", volume);)
+	
+	*((volatile uint16_t*)(0xDFF408 + (channel * 0x10))) = (uint16_t)volume;                // Set Channel Volume (0-FF / 0-FF) 
 }
 
 void ApolloFadeInSound(struct ApolloSound *sound)
@@ -267,6 +427,24 @@ void ApolloFadeOutSound(struct ApolloSound *sound)
 		ApolloWaitVBL();
 	}
 	ApolloStopSound(sound);
+}
+
+void ApolloFadeIn(int channel, int volume_start, int volume_end)
+{
+	for (;volume_start < volume_end;volume_start++)
+	{
+		ApolloVolume(channel, volume_start, volume_start);
+		ApolloWaitVBL();
+	}
+}
+
+void ApolloFadeOut(int channel, int volume_start, int volume_end)
+{
+	for (;volume_start > volume_end;volume_start--)
+	{
+		ApolloVolume(channel, volume_start, volume_start);
+		ApolloWaitVBL();
+	}
 }
 
 // Apollo Picture Functions 

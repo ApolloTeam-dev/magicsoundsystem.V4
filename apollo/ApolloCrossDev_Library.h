@@ -106,11 +106,18 @@ uint8_t ApolloAllocSound( struct ApolloSound *sound);
 void ApolloFreeSound( struct ApolloSound *sound);
 uint8_t ApolloLoadSound(struct ApolloSound *sound);
 uint8_t ApolloPlaySound(struct ApolloSound *sound);
+void ApolloLoad(const char *filename, uint8_t **buffer, int*position, uint32_t *lenght, uint16_t offset);
+bool ApolloPlay(int channel, int volume_left, int volume_right, bool loop, bool fadein, uint8_t *buffer, uint32_t lenght, uint16_t period, int *channel_chosen);
 void ApolloStopSound(struct ApolloSound *sound);
 void ApolloStartSound(struct ApolloSound *sound);
+void ApolloStop(int channel);
+void ApolloStart(int channel);
 void ApolloVolumeSound(struct ApolloSound *sound);
+void ApolloVolume(int channel, int volume_left, int volume_right);
 void ApolloFadeInSound(struct ApolloSound *sound);
 void ApolloFadeOutSound(struct ApolloSound *sound);
+void ApolloFadeIn(int channel, int volume_start, int volume_end);
+void ApolloFadeOut(int channel, int volume_start, int volume_end);
 
 // Apollo Picture Functions 
 uint8_t ApolloAllocPicture( struct ApolloPicture *picture);
