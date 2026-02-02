@@ -190,11 +190,16 @@ uint8_t ApolloPlaySound( struct ApolloSound *sound)
 	for (channel=0; channel<16; channel++)
 	{
 		channelfree = ( ( (channel < 4) && ( (*((volatile uint16_t*)0xDFF002) & (1<<channel)) == 0) ) || ( (channel >=4) && (*((volatile uint16_t*)0xDFF202) & (1<<channel)) == 0 ) );
-		AD(sprintf(ApolloDebugMessage, "ApolloPlay: Channel = %d | DMA Channel Free = %s\n", channel, channelfree? "YES":"NO");)
-		AD(ApolloDebugPutStr(ApolloDebugMessage);)
+		ADX(sprintf(ApolloDebugMessage, "ApolloPlay: Channel = %d | DMA Channel Free = %s\n", channel, channelfree? "YES":"NO");)
+		ADX(ApolloDebugPutStr(ApolloDebugMessage);)
 		if (channelfree)  break;
 	}
-	if(channel==16) return APOLLO_SOUND_NOCHANNEL;
+	if(channel==16)
+	{
+		return APOLLO_SOUND_NOCHANNEL;
+	} else {
+		sound->channel = channel;
+	}
 
 	AD(sprintf(ApolloDebugMessage, "ApolloPlay: Channel = %d | length = %d | Vol-L = %d | Vol-R = %d | Loop = %d | Fadein = %d | Period = %d\n",
 		 channel, sound->size, sound->volume_left, sound->volume_right, sound->loop, sound->fadein, sound->period);)

@@ -637,7 +637,7 @@ extern "C" int MSS_SoundInit(int frequency)
 	AD(sprintf(ApolloDebugMessage, "MSS_SoundInit: Initializing sound system at %d Hz\n", frequency);)
 	AD(ApolloDebugPutStr(ApolloDebugMessage);)
 	#endif
-	
+
 	SDL_AudioSpec spec;
 	
 	if ((!ENABLE_SOUND) || soundOn==false) return 0;
@@ -659,8 +659,8 @@ extern "C" int MSS_SoundInit(int frequency)
 	if (SDL_Init(SDL_INIT_EVERYTHING & ~SDL_INIT_CDROM)<0)
 	{
         return 0;
-    }
-	
+    } 
+
 	frequency = frequency;
 	
     spec.freq = frequency;
@@ -693,7 +693,7 @@ extern "C" int MSS_SoundInit(int frequency)
         return 1;
     }
 #endif	
-		
+
     return 1;
 }
 
@@ -757,7 +757,8 @@ extern "C" void MSS_SetVolume(void *handle, double _vol)
 {
 	#ifdef APOLLO
 	AD(sprintf(ApolloDebugMessage, "MSS_SetVolume: Setting volume to %f\n", _vol);)
-	AD(ApolloDebugPutStr(ApolloDebugMessage);)	
+	AD(ApolloDebugPutStr(ApolloDebugMessage);)
+	return;	
 	#endif
 	
 	SoundItem *sound = (SoundItem*)handle;
@@ -773,6 +774,7 @@ extern "C" void MSS_SetPan(void *handle, double _pan)
 	#ifdef APOLLO
 	AD(sprintf(ApolloDebugMessage, "MSS_SetPan: Setting pan to %f	\n", _pan);)
 	AD(ApolloDebugPutStr(ApolloDebugMessage);)
+	return;
 	#endif
 	
 	SoundItem *sound = (SoundItem*)handle;
@@ -791,7 +793,8 @@ extern "C" double MSS_GetMusicVolume()
 {	
 	#ifdef APOLLO
 	AD(sprintf(ApolloDebugMessage, "MSS_GetMusicVolume: Getting music volume %f\n", mvolume);)
-	AD(ApolloDebugPutStr(ApolloDebugMessage);)	
+	AD(ApolloDebugPutStr(ApolloDebugMessage);)
+	return 0.0f;	
 	#endif	
 	
 	return mvolume;
@@ -800,8 +803,9 @@ extern "C" double MSS_GetMusicVolume()
 extern "C" void MSS_SetMusicVolume(double mvol)
 {
 	#ifdef APOLLO
-	AD(sprintf(ApolloDebugMessage, "MSS_SetMusicVolume: Setting music volume to	 %f\n", mvol);)
+	AD(sprintf(ApolloDebugMessage, "MSS_SetMusicVolume: Setting music volume\n");)
 	AD(ApolloDebugPutStr(ApolloDebugMessage);)	
+	return;
 	#endif	
 	
 	if (mvol > 1) mvol = 1;
@@ -816,6 +820,13 @@ extern "C" void MSS_Play(void *handle, double _vol, double _pan, int looped, boo
 
 	AD(sprintf(ApolloDebugMessage, "MSS_Play: Playing %s | Size %d\n", apollo_sound->filename, apollo_sound->size);)
 	AD(ApolloDebugPutStr(ApolloDebugMessage);)
+
+	int8_t result = ApolloPlaySound(apollo_sound);
+	if(result != 0) {
+		AD(sprintf(ApolloDebugMessage, "MSS_Play: Failed to play sound %s, error code %d\n", apollo_sound->filename, result);)
+		AD(ApolloDebugPutStr(ApolloDebugMessage);)
+	}
+	
 	return;
 	#endif	
 	
@@ -1336,16 +1347,17 @@ extern "C" void *MSS_LoadSample(const char* name)
 
 	struct ApolloSound *apollo_sound;
 	apollo_sound = new ApolloSound();
-	
+	apollo_sound->format = APOLLO_AIFF_FORMAT;
+	apollo_sound->volume_left = 128;
+	apollo_sound->volume_right = 128;
+
 	char test[25] = "Apollo/";
 	strcpy(test + 7, name);
 	strcpy(test + 7 + strlen(name), ".aiff");	
 	test[7+strlen(name)+5]=0;
 	strcpy(apollo_sound->filename, test);
-	apollo_sound->format = APOLLO_AIFF_FORMAT;
 
 	uint8_t result;
-
 	result = ApolloLoadSound(apollo_sound);
 	if (result != APOLLO_SOUND_OK)
 	{
@@ -1356,7 +1368,6 @@ extern "C" void *MSS_LoadSample(const char* name)
 	}
 
 	return apollo_sound;
-
 	#endif
 	
 	SoundItem *sound = 0;
