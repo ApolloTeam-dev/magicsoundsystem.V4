@@ -35,12 +35,16 @@ uint8_t ApolloAllocSound( struct ApolloSound *sound)
 
 void ApolloFreeSound( struct ApolloSound *sound)
 {
+	AD(sprintf(ApolloDebugMessage, "ApolloFreeSound: Free Sound: %s . . . ", sound->filename);)
+	AD(ApolloDebugPutStr(ApolloDebugMessage);)
+
 	if (sound->buffer)
 	{
 		FreeVec(sound->buffer);					
 		sound->buffer = NULL;
-		ADX(ApolloDebugPutStr( "ApolloFreeSound: Buffer memory freed\n");)
 	}
+
+	AD(ApolloDebugPutStr("Done.\n");)
 }
 
 uint8_t ApolloLoadSound( struct ApolloSound *sound)
@@ -234,7 +238,8 @@ uint8_t ApolloPlaySound( struct ApolloSound *sound)
 
 void ApolloStopSound(struct ApolloSound *sound)
 {
-	AD(ApolloDebugPutDec("ApolloStop: Stopping audio on channel", sound->channel);)
+	AD(sprintf(ApolloDebugMessage, "ApolloStopSound: Stop Sound: %s on channel %d . . . ", sound->filename, sound->channel);)
+	AD(ApolloDebugPutStr(ApolloDebugMessage);)
 
 	if (sound->channel < 4)
 	{ 
@@ -243,7 +248,7 @@ void ApolloStopSound(struct ApolloSound *sound)
 		*((volatile uint16_t*)0xDFF296) = (uint16_t)(0x0000) + (1<<(sound->channel-4));            // DMACON2 = clear AUD4-15 (stop current stream)      
 	}
 
-	ApolloCPUDelay(5000);	// Wait a bit to ensure sound has stopped
+	AD(ApolloDebugPutStr("Done.\n");)
 }
 
 void ApolloStartSound(struct ApolloSound *sound)

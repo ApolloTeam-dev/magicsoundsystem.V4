@@ -830,7 +830,7 @@ extern "C" void MSS_Play(void *handle, double _vol, double _pan, int looped, boo
 		AD(sprintf(ApolloDebugMessage, "MSS_Play: Failed to play sound %s, error code %d\n", apollo_sound->filename, result);)
 		AD(ApolloDebugPutStr(ApolloDebugMessage);)
 	}
-	
+	SDL_PauseAudio(0);
 	return;
 	#endif	
 	
@@ -862,6 +862,8 @@ extern "C" void MSS_Stop(void *handle)
 
 	AD(sprintf(ApolloDebugMessage, "MSS_Stop: Stop Sound: %s on channel %d\n", apollo_sound->filename, apollo_sound->channel);)
 	AD(ApolloDebugPutStr(ApolloDebugMessage);)
+
+	ApolloStopSound(apollo_sound);
 
 	return;
 	#endif
