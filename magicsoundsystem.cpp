@@ -818,8 +818,12 @@ extern "C" void MSS_Play(void *handle, double _vol, double _pan, int looped, boo
 	#ifdef APOLLO
 	struct ApolloSound *apollo_sound = (struct ApolloSound *)handle;
 
-	AD(sprintf(ApolloDebugMessage, "MSS_Play: Playing %s | Size %d\n", apollo_sound->filename, apollo_sound->size);)
-	AD(ApolloDebugPutStr(ApolloDebugMessage);)
+	ADX(sprintf(ApolloDebugMessage, "MSS_Play: Playing %s | Size %6d | Channel %d\n", apollo_sound->filename, apollo_sound->size, apollo_sound->channel);)
+	ADX(ApolloDebugPutStr(ApolloDebugMessage);)
+
+	apollo_sound->volume_left = (uint8_t)(_vol * 127);
+	apollo_sound->volume_right = (uint8_t)(_vol * 127);
+	apollo_sound->loop = (uint8_t)(looped != 0);	
 
 	int8_t result = ApolloPlaySound(apollo_sound);
 	if(result != 0) {
@@ -856,7 +860,7 @@ extern "C" void MSS_Stop(void *handle)
 	#ifdef APOLLO
 	struct ApolloSound *apollo_sound = (struct ApolloSound *)handle;
 
-	AD(sprintf(ApolloDebugMessage, "MSS_Stop: Stopping sound: %s\n", apollo_sound->filename);)
+	AD(sprintf(ApolloDebugMessage, "MSS_Stop: Stop Sound: %s on channel %d\n", apollo_sound->filename, apollo_sound->channel);)
 	AD(ApolloDebugPutStr(ApolloDebugMessage);)
 
 	return;
@@ -874,7 +878,7 @@ extern "C" void MSS_Free(void *handle)
 	#ifdef APOLLO
 	struct ApolloSound *apollo_sound = (struct ApolloSound *)handle;
 
-	AD(sprintf(ApolloDebugMessage, "MSS_Free: Freeing sound: %s\n", apollo_sound->filename);)
+	AD(sprintf(ApolloDebugMessage, "MSS_Free: Free Sound: %s\n", apollo_sound->filename);)
 	AD(ApolloDebugPutStr(ApolloDebugMessage);)
 
 	ApolloFreeSound(apollo_sound);
@@ -1342,8 +1346,8 @@ extern "C" void MSS_SetStreamThreshold(int threshold)
 extern "C" void *MSS_LoadSample(const char* name)
 {
 	#ifdef APOLLO
-	AD(sprintf(ApolloDebugMessage, "MSS_LoadSample: Loading sound file %s\n", name);)
-	AD(ApolloDebugPutStr(ApolloDebugMessage);)
+	ADX(sprintf(ApolloDebugMessage, "MSS_LoadSample: Loading sound file %s\n", name);)
+	ADX(ApolloDebugPutStr(ApolloDebugMessage);)
 
 	struct ApolloSound *apollo_sound;
 	apollo_sound = new ApolloSound();

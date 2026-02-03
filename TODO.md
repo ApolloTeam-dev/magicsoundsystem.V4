@@ -4,6 +4,7 @@ TODO
 - New samples?
 - Update Icon
 - Apollo JoyPad support
+- Classic Amiga Mousepointer
 
 
 
