@@ -179,7 +179,7 @@ uint8_t ApolloLoadSound( struct ApolloSound *sound)
 
 	sound->position = buffer_aligned-sound->buffer;				// Report back position of aligned buffer within allocated buffer
 
-	AD(sprintf(ApolloDebugMessage, "ApolloLoadSound: Sound File Loaded: %s | Filesize: %d | Format: %d | Size = %8d BYTES | SampleRate = %d | Period = %d | Position = %d | Offset = %d\n",
+	AD(sprintf(ApolloDebugMessage, "ApolloLoadSound: %s | Filesize: %d | Format: %d | Size = %8d Bytes | SampleRate = %d | Period = %d | Position = %d | Offset = %d\n",
 		 sound->filename, file_size, sound->format, sound->size, samplerate_fraction, sound->period, sound->position, offset);)
 	AD(ApolloDebugPutStr(ApolloDebugMessage);)
 
@@ -205,26 +205,26 @@ uint8_t ApolloPlaySound( struct ApolloSound *sound)
 		sound->channel = channel;
 	}
 
-	AD(sprintf(ApolloDebugMessage, "ApolloPlaySound: Channel = %d | Size = %8d | Vol-L = %d | Vol-R = %d | Loop = %d | Fadein = %d | Period = %d\n",
-		 channel, sound->size, sound->volume_left, sound->volume_right, sound->loop, sound->fadein, sound->period);)
+	AD(sprintf(ApolloDebugMessage, "ApolloPlaySound: %s | Channel = %d | Size = %8d | Vol-L = %d | Vol-R = %d | Loop = %d | Fadein = %d | Period = %d\n",
+		 sound->filename, sound->channel, sound->size, sound->volume_left, sound->volume_right, sound->loop, sound->fadein, sound->period);)
 	AD(ApolloDebugPutStr(ApolloDebugMessage);)
 
-	*((volatile uint32_t*)(0xDFF400 + (channel * 0x10))) = (uint32_t)(sound->buffer+sound->position);  	// Set Channel Pointer
-	*((volatile uint32_t*)(0xDFF404 + (channel * 0x10))) = (uint32_t)(sound->size/8);					// Set Channel Music length (in pairs of stereo sample = 2 * 2 * 16-bit = 64-bit chunksize = filesize in bytes / 8)
+	*((volatile uint32_t*)(0xDFF400 + (sound->channel * 0x10))) = (uint32_t)(sound->buffer+sound->position);  	// Set Channel Pointer
+	*((volatile uint32_t*)(0xDFF404 + (sound->channel * 0x10))) = (uint32_t)(sound->size/8);					// Set Channel Music length (in pairs of stereo sample = 2 * 2 * 16-bit = 64-bit chunksize = filesize in bytes / 8)
 	*((volatile uint16_t*)(0xDFF408 + (sound->channel * 0x10))) = 0;                					// Set Channel Volume to Zero 
 
 	if (sound->loop)
 	{
-		*((volatile uint16_t*)(0xDFF40A + (channel * 0x10))) = (uint16_t)0x0005;            // %0101 = $05 - Sample 16bit (bit0 = 1) / OneShot Disabled (bit1 = 0) / Stereo Enabled (bit2 = 1)
+		*((volatile uint16_t*)(0xDFF40A + (sound->channel * 0x10))) = (uint16_t)0x0005;            // %0101 = $05 - Sample 16bit (bit0 = 1) / OneShot Disabled (bit1 = 0) / Stereo Enabled (bit2 = 1)
 	} else {
-		*((volatile uint16_t*)(0xDFF40A + (channel * 0x10))) = (uint16_t)0x0007;            // %0111 = $07 - Sample 16bit (bit0 = 1) / OneShot Enabled (bit1 = 1) / Stereo Enabled (bit2 = 1)
+		*((volatile uint16_t*)(0xDFF40A + (sound->channel * 0x10))) = (uint16_t)0x0007;            // %0111 = $07 - Sample 16bit (bit0 = 1) / OneShot Enabled (bit1 = 1) / Stereo Enabled (bit2 = 1)
 	}
-	*((volatile uint16_t*)(0xDFF40C + (channel * 0x10))) = (uint16_t)sound->period;			// PERIOD= 3640000 * (1/44100 Hz)
-	if (channel < 4)
+	*((volatile uint16_t*)(0xDFF40C + (sound->channel * 0x10))) = (uint16_t)sound->period;			// PERIOD= 3640000 * (1/44100 Hz)
+	if (sound->channel < 4)
 	{ 
-		*((volatile uint16_t*)0xDFF096) = (uint16_t)(0x8000) + (1<<channel);                // DMACON = enable DMA and enable DMA for specific channel AUD0-3 (start current stream)    
+		*((volatile uint16_t*)0xDFF096) = (uint16_t)(0x8000) + (1<<sound->channel);                // DMACON = enable DMA and enable DMA for specific channel AUD0-3 (start current stream)    
 	} else {
-		*((volatile uint16_t*)0xDFF296) = (uint16_t)(0x8000) + (1<<(channel-4));            // DMACON = enable DMA and enable DMA for specific channel AUD4-15 (start current stream)       
+		*((volatile uint16_t*)0xDFF296) = (uint16_t)(0x8000) + (1<<(sound->channel-4));            // DMACON = enable DMA and enable DMA for specific channel AUD4-15 (start current stream)       
 	}
 
 	if(sound->fadein)

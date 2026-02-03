@@ -823,7 +823,7 @@ extern "C" void MSS_Play(void *handle, double _vol, double _pan, int looped, boo
 
 	apollo_sound->volume_left = (uint8_t)(_vol * 127);
 	apollo_sound->volume_right = (uint8_t)(_vol * 127);
-	apollo_sound->loop = (uint8_t)(looped != 0);	
+	apollo_sound->loop = false; //(uint8_t)(looped != 0);	
 
 	int8_t result = ApolloPlaySound(apollo_sound);
 	if(result != 0) {
