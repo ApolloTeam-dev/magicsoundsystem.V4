@@ -1166,6 +1166,21 @@ extern "C" void MSS_SetStreamThreshold(int threshold)
 
 extern "C" void *MSS_LoadSample(const char* name)
 {
+	#ifdef APOLLO
+
+	
+
+
+
+
+
+	#endif
+	
+	
+	
+	
+	
+	
 	SoundItem *sound = 0;
 	int freq, channels, bitsPerSample;	
 	unsigned int loadedSize;

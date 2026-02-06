@@ -3,7 +3,7 @@ extern "C"{
 #endif 
 
 // ApolloCrossDev Library
-// 21-1-2025
+// 6-2-2026
 
 // Include Apollo Headers
 #include "ApolloCrossDev_Base.h"
@@ -22,7 +22,7 @@ struct ApolloFile
 struct ApolloSound
 {
     // Input Values
-    char  filename[25];
+    char        *filename;
     uint8_t     format;
     bool        loop;
     bool        fadein;

@@ -26,15 +26,17 @@
 
 // Apollo Debug
 #ifdef APOLLO_DEBUG
-#define AD(x) x
+ #define AD(x) x
+ #ifdef APOLLO_DEBUGEXTRA
+  #define ADX(x) x
+ #else
+  #define ADX(x)
+ #endif
 #else
-#define AD(x)
+ #define AD(x)
+ #define ADX(x) 
 #endif
-#ifdef APOLLO_DEBUGEXTRA
-#define ADX(x) x
-#else
-#define ADX(x)
-#endif
+
 
 // Apollo Audi (ARNE)
 #define APOLLO_PAL_CLOCK        3546895   // PAL Clock Frequency in Hz
@@ -45,6 +47,7 @@
 #define APOLLO_AIFF_FORMAT      0x1
 #define APOLLO_DDS_FORMAT	    0x2
 #define APOLLO_BMP_FORMAT	    0x3
+#define APOLLO_WAV_FORMAT       0x4
 
 // Apollo Video (ISABELLE)
 #define APOLLO_SAGA_GFXMODE		0xDFF1F4	// Bit[8-15]=SAGA Display Resolution + Bit[0-7]=Color Format 
@@ -139,6 +142,7 @@
 #define APOLLO_SOUND_MEMERROR   0x09
 #define APOLLO_SOUND_OPENERR    0x0A
 #define APOLLO_SOUND_CLOSEERR   0x0B
+#define APOLLO_SOUND_COMPRERR   0x0C
 
 // Apollo Hardware Sprite Pointer
 #define APOLLO_POINTER_SET_X    0xDFF1D0
