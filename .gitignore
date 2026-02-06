@@ -1,4 +1,4 @@
-magicsystem.dll
+*.dll
 *.o
 apollo/*.o
 apollo.backup
