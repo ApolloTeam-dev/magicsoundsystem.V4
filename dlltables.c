@@ -157,17 +157,17 @@ dll_tImportSymbol DLL_ImportSymbols[]=
 
 int  DLL_Init(void)
 {
-    #ifdef APOLLO_DEBUG
-	ApolloDebugInit();
-	ApolloDebugPutStr("Apollo Serial Debug ******************************************************\n");
-	#define AD(x) x
-	#else
-	#define AD(x)
-	#endif	
-	
+	#ifdef APOLLO
+	AD(ApolloDebugInit();)
+	AD(ApolloDebugPutStr("Apollo Serial Debug - START ******************************************************\n");)
+	#endif
+
 	return 1L;
 }
 
 void  DLL_DeInit(void)
 {
+	#ifdef APOLLO
+	AD(ApolloDebugPutStr("Apollo Serial Debug - END ******************************************************\n");)
+	#endif 
 }

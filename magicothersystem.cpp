@@ -327,12 +327,10 @@ extern "C" void MSS_CloseScreen(void *screenHandle)
 		LowLevelBase = 0;
 	}
     #ifdef APOLLO
-    *(volatile int16_t*)APOLLO_SAGA_PIP_DMAROWS = 0;
-    *(volatile LONG*)APOLLO_SAGA_POINTER = (uint32_t)(amigaScreen->screen->RastPort.BitMap->Planes[0]);
-    *(volatile uint16_t*)APOLLO_SAGA_GFXMODE = 0x0A04; // Set SAGA Gfxmode to 1280x720x24-Bit
-    *(volatile uint16_t*)APOLLO_SAGA_MODULO = 0;
+    ApolloHidePiP();
+    ApolloShowPicture(&apollo_wbscreen);
     ApolloFreePicture(&apollo_pip);
-    #endif 
+    #endif
 }
 
 #ifndef USEAGA
