@@ -327,8 +327,12 @@ extern "C" void MSS_CloseScreen(void *screenHandle)
 		LowLevelBase = 0;
 	}
     #ifdef APOLLO
-    ApolloHidePiP();
-    ApolloShowPicture(&apollo_wbscreen);
+    if(apollo_pip.fullscreen)
+    {
+        ApolloShowPicture(&apollo_wbscreen);
+    } else {
+        ApolloHidePiP();
+    }
     ApolloFreePicture(&apollo_pip);
     #endif
 }
