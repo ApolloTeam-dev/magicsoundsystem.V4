@@ -2,7 +2,7 @@
 
 #ifdef APOLLO
 #include "ApolloLib/ApolloCrossDev_Base.h"
-#include "ApolloLib/ApolloCrossDev_Library.h"
+#include "ApolloLib/ApolloCrossDev_Lib.h"
 #include "ApolloLib/ApolloCrossDev_Debug.h"
 #endif
 

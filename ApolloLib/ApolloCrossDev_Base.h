@@ -30,6 +30,11 @@
 #else
 #define AD(x)
 #endif
+#ifdef APOLLO_DEBUGEXTRA
+#define ADX(x) x
+#else
+#define ADX(x)
+#endif
 
 // Apollo Audi (ARNE)
 #define APOLLO_PAL_CLOCK        3546895   // PAL Clock Frequency in Hz
