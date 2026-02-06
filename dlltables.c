@@ -1,9 +1,9 @@
 #define USENODLL
 
 #ifdef APOLLO
-#include "apollo/ApolloCrossDev_Base.h"
-#include "apollo/ApolloCrossDev_Library.h"
-#include "apollo/ApolloCrossDev_Debug.h"
+#include "ApolloLib/ApolloCrossDev_Base.h"
+#include "ApolloLib/ApolloCrossDev_Library.h"
+#include "ApolloLib/ApolloCrossDev_Debug.h"
 #endif
 
 #include <stdlib.h>
