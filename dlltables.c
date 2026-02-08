@@ -1,9 +1,7 @@
 #define USENODLL
 
 #ifdef APOLLO
-#include "ApolloLib/ApolloCrossDev_Base.h"
 #include "ApolloLib/ApolloCrossDev_Lib.h"
-#include "ApolloLib/ApolloCrossDev_Debug.h"
 #endif
 
 #include <stdlib.h>
@@ -159,7 +157,7 @@ int  DLL_Init(void)
 {
 	#ifdef APOLLO
 	AD(ApolloDebugInit();)
-	AD(ApolloDebugPutStr("Apollo Serial Debug - START ******************************************************\n");)
+	AD(ApolloDebugPutStr("\nApollo Serial Debug - START ******************************************************\n\n");)
 	#endif
 
 	return 1L;
@@ -168,6 +166,6 @@ int  DLL_Init(void)
 void  DLL_DeInit(void)
 {
 	#ifdef APOLLO
-	AD(ApolloDebugPutStr("Apollo Serial Debug - END ******************************************************\n");)
+	AD(ApolloDebugPutStr("\nApollo Serial Debug - END ******************************************************\\nn");)
 	#endif 
 }

@@ -1,11 +1,11 @@
 ***************************************************
 * ApolloCrossDev Assembler Library                *
-* 21-1-2025                                       *
+* 6-2-2026                                        *
 ***************************************************
 
 * 1. ApolloFill		= Fill Destination with value (Generic)
-* 2. ApolloCopy		= Copy Source to Destination (Generic)
-* 3. ApolloCopy32	= Copy Source to Destination (32-Byte Aligned)
+* 2. ApolloCopyPicture		= Copy Source to Destination (Generic)
+* 3. ApolloCopyPicture32	= Copy Source to Destination (32-Byte Aligned)
 
 ***************************************************
 * ApolloFill                                      *
@@ -23,7 +23,7 @@
 
 _ApolloFill:
 	movem.l d7/d6/d5/d4/d3,-(sp)			      		* Save registers to Stack
-	lsr.w #3,d5											* d5 = convert colordepth in Bits to colordepth in Bytes
+	lsr.l #3,d5											* d5 = convert colordepth in Bits to colordepth in Bytes
 	mulu.l d5,d3										* d3 = calculate effective width in Bytes (width * colordepth)
 	mulu.l d5,d6										* d6 = calculate effective destination modulo in Bytes (modulo * colordepth)
 	vperm #$45674567,d7,d7,d7							* fill d7 with 2 x uint32_t value
@@ -31,33 +31,33 @@ _ApolloFill:
 
 .LoopHeight:
 	move.l d3,d0										* d0 = reset width loop counter each height loop
-	lsr.w  #3,d0										* shift 3 positions left to change 1 to 8 Byte Chunk counter
+	lsr.l  #3,d0										* shift 3 positions left to change 1 to 8 Byte Chunk counter
 	bra.s .GoLoopWidth8Byte	
 
 .LoopWidth8Byte:
 	store d7,(a0)+										* store 8 Byte value into destination
 
 .GoLoopWidth8Byte:
-	dbra d0,.LoopWidth8Byte								* d0 = decrease 8-byte CHUNK width loop counter and jump to .LoopWidth8Byte			
+	dbra.l d0,.LoopWidth8Byte								* d0 = decrease 8-byte CHUNK width loop counter and jump to .LoopWidth8Byte			
 	moveq #3,d0											* d0 = set lowest two bits to %11 ( = 3 WORDS)
-	and.w d3,d0											* d0 = mask lowest two bits of width for remainder WORD counter
+	and.l d3,d0											* d0 = mask lowest two bits of width for remainder WORD counter
 	bra.s .GoLoopWidth2Byte								* Process remainder width WORD
 
 .LoopWidth2Byte:
 	move.w d7,(a0)+                                     * store 2 Byte value into destination
 
 .GoLoopWidth2Byte:
-	dbra d0,.LoopWidth2Byte                             * d2 = decrease width loop counter 
+	dbra.l d0,.LoopWidth2Byte                             * d2 = decrease width loop counter 
 	add.l d6,a0 										* a0 = add source pitch d5 to source pointer (modulo)
 
 .EndLoopHeight:
-	dbra d4,.LoopHeight                                 * d0 = decrease height loop counter and jump to .LoopHeight
+	dbra.l d4,.LoopHeight                                 * d0 = decrease height loop counter and jump to .LoopHeight
 	movem.l (sp)+,d3/d4/d5/d6/d7			    		* Restore all registers from Stack
 	rts
     
 
 *************************************************************
-* ApolloCopy                                                *
+* ApolloCopyPicture                                         *
 *************************************************************
 * a0 = src = source pointer									*	
 * a1 = dst = destination pointer							*
@@ -67,44 +67,44 @@ _ApolloFill:
 * d6 = dstmod = destination modulo in Bytes					*
 *************************************************************
 
-	XDEF _ApolloCopy
+	XDEF _ApolloCopyPicture
 	CNOP 0,4
 
-_ApolloCopy:
+_ApolloCopyPicture:
 	movem.l a6/d6/d5/d4/d3,-(sp)	* Save all registers to Stack
 	bra.s .EndLoopHeight
 
 .LoopHeight:
 	move.l d3,d0					* d0 = reset width loop counter each height loop
-	lsr.w  #4,d0					* divide width counter by 16 to convert byte pixel to 16-byte pixel chunk counter
+	lsr.l  #4,d0					* divide width counter by 16 to convert byte pixel to 16-byte pixel chunk counter
 	bra.s .GoLoopWidth16Byte
 
 .LoopWidth16Byte:
 	move16 (a0)+,(a1)+				* copy 16 bytes from a0 source to a1 destination
 	
 .GoLoopWidth16Byte:
-	dbra   d0,.LoopWidth16Byte
+	dbra.l   d0,.LoopWidth16Byte
 	moveq #15,d0					* d0 = set lowest four bits to %1111 (= #15)
-	and.w d3,d0						* d0 = mask lowest four bits of width for remainder byte pixel counter
+	and.l d3,d0						* d0 = mask lowest four bits of width for remainder byte pixel counter
 	bra.s .GoLoopWidthByte			* Process remainder pixels
 
 .LoopWidthByte:
 	move.b (a0)+,(a1)+				* copy src-pixel to dst-pixel
 .GoLoopWidthByte:
-	dbra d0,.LoopWidthByte			* d0 = decrease byte pixel width loop counter and jump to .LoopWidthByte
+	dbra.l d0,.LoopWidthByte			* d0 = decrease byte pixel width loop counter and jump to .LoopWidthByte
 
 .EndLoopWidth:
 	add.l d5,a0						* a0 = add source pitch d4 to source pointer (modulo)
 	add.l d6,a1						* a1 = add destination pitch d5 to destination pointer (modulo)
 
 .EndLoopHeight:
-	dbra d4,.LoopHeight				* d4 = decrease height loop counter and jump to .LoopHeight
+	dbra.l d4,.LoopHeight				* d4 = decrease height loop counter and jump to .LoopHeight
 	movem.l (sp)+,d3/d4/d5/d6/a6	* Restore all registers from Stack
 	rts
 
 
 *************************************************************
-* ApolloCopy32 (32-Byte aligned width mandatory) 			*
+* ApolloCopyPicture32 (32-Byte aligned width mandatory) 	*
 *************************************************************
 * a0 = s = source pointer									*	
 * a1 = d = destination pointer								*
@@ -114,12 +114,12 @@ _ApolloCopy:
 * d6 = dmodulo = destination pitch in Bytes					*
 *************************************************************
 
-	XDEF _ApolloCopy32
+	XDEF _ApolloCopyPicture32
 	CNOP 0,4
 
-_ApolloCopy32:
+_ApolloCopyPicture32:
 	movem.l d6/d5/d4/d3,-(sp)		* Save all registers to Stack
-    lsr.w  #5,d3					* divide width value by 32 to for 256-bit chunk counter
+    lsr.l  #5,d3					* divide width value by 32 to for 256-bit chunk counter
 	bra.s .EndLoopHeight
 
 .LoopHeight:
@@ -131,16 +131,88 @@ _ApolloCopy32:
 	move16 (a0)+,(a1)+				* copy 16 Bytes from a0 source to a1 destination
 	
 .GoLoopWidth32Byte:
-	dbra   d0,.LoopWidth32Byte
+	dbra.l   d0,.LoopWidth32Byte
 
 .EndLoopWidth:
 	add.l d5,a0						* a0 = add source pitch d4 to source pointer (modulo)
 	add.l d6,a1						* a1 = add destination pitch d5 to destination pointer (modulo)
 
 .EndLoopHeight:
-	dbra d4,.LoopHeight				* d4 = decrease height loop counter and jump to .LoopHeight
+	dbra.l d4,.LoopHeight				* d4 = decrease height loop counter and jump to .LoopHeight
 	movem.l (sp)+,d3/d4/d5/d6	    * Restore all registers from Stack
 	rts
+
+
+*************************************************************
+* ApolloCopyBlock                                           *
+*************************************************************
+* a0 = src = source pointer									*	
+* a1 = dst = destination pointer							*
+* d3 = size = block size in Bytes                           *
+*************************************************************
+
+	XDEF _ApolloCopyBlock
+	CNOP 0,4
+
+_ApolloCopyBlock:
+	movem.l a6/d6/d5/d4/d3,-(sp)	* Save all registers to Stack
+
+.LoopSize:
+	move.l d3,d0					* d0 = set size loop counter
+	lsr.l  #4,d0					* divide size counter by 16 to determine 16-byte chunk counter
+	bra.s .GoLoopSize16Byte
+
+.LoopSize16Byte:
+	move16 (a0)+,(a1)+				* copy 16 bytes from a0 source to a1 destination
+	
+.GoLoopSize16Byte:
+	dbra.l  d0,.LoopSize16Byte
+	moveq #15,d0					* d0 = set lowest four bits to %1111 (= #15)
+	and.l d3,d0						* d0 = mask lowest four bits of width for remainder byte counter
+	bra.s .GoLoopSizeByte			* Process remainder bytes
+
+.LoopSizeByte:
+	move.b (a0)+,(a1)+				* copy src-byte to dst-byte
+
+.GoLoopSizeByte:
+	dbra.l d0,.LoopSizeByte			* d0 = decrease byte counter and jump to .LoopSizeByte
+
+.EndLoopSize:
+	movem.l (sp)+,d3/d4/d5/d6/a6	* Restore all registers from Stack
+	rts
+
+
+*************************************************************
+* ApolloCopyBlock32 (32-Byte aligned width mandatory) 	    *
+*************************************************************
+* a0 = s = source pointer									*	
+* a1 = d = destination pointer								*
+* d3 = w = block size in Bytes				     			*
+*************************************************************
+
+	XDEF _ApolloCopyBlock32
+	CNOP 0,4
+
+_ApolloCopyBlock32:
+	movem.l d6/d5/d4/d3,-(sp)		* Save all registers to Stack
+
+.LoopSize:
+	move.l d3,d0					* d0 = reset width loop counter each height loop
+    lsr.l  #5,d0					* divide size value by 32 to determine 256-bit chunk counter
+	bra.s .GoLoopSize32Byte
+
+.LoopSize32Byte:
+	move16 (a0)+,(a1)+				* copy 16 Bytes from a0 source to a1 destination
+	move16 (a0)+,(a1)+				* copy 16 Bytes from a0 source to a1 destination
+	
+.GoLoopSize32Byte:
+	dbra.l   d0,.LoopSize32Byte
+
+.EndLoopSize:
+	movem.l (sp)+,d3/d4/d5/d6	    * Restore all registers from Stack
+	rts
+
+
 
 
 * Apollo CPU Tick *
@@ -204,7 +276,7 @@ _ApolloEndianSwapWordBuffer:
 .Go8ByteLoop:
 	dbra.l d0,.Loop8Byte								* countdown loop for 64-bit chunks
 	moveq #3,d0											* d0 = set d0 = set mask bits to %11
-	and.w d2,d0											* d0 = mask width for remainder WORD counter
+	and.l d2,d0											* d0 = mask width for remainder WORD counter
 	bra.s .Go2ByteLoop
 
 .Loop2Byte:
@@ -242,7 +314,7 @@ _ApolloEndianSwapLongBuffer:
 .Go8ByteLoop:
 	dbra.l d0,.Loop8Byte								* countdown loop for 64-bit chunks
 	moveq #5,d0											* d0 = set mask bits to %111
-	and.w d2,d0											* d0 = mask width for remainder LONG counter
+	and.l d2,d0											* d0 = mask width for remainder LONG counter
 	bra.s .Go4ByteLoop
 
 .Loop4Byte:

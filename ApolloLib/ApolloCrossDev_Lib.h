@@ -6,7 +6,7 @@ extern "C"{
 // 6-2-2026
 
 // Include Apollo Headers
-#include "ApolloCrossDev_Base.h"
+#include "ApolloCrossDev_Defines.h"
 #include "ApolloCrossDev_Debug.h"
 
 // Apollo Structures ######################################
@@ -22,22 +22,23 @@ struct ApolloFile
 struct ApolloSound
 {
     // Input Values
-    char        *filename;
+    char        filename[256];
     uint8_t     format;
-    bool        loop;
-    bool        fadein;
-    bool        fadeout;
-    uint16_t    volume_left;
-    uint16_t    volume_right;
     // Output Values
     uint8_t     *buffer;
-    uint8_t     position;
+    uint32_t    position;
     uint32_t    size;
     uint16_t    period;
     uint8_t     channel;
     bool        stereo;
     uint32_t    datarate;
     uint16_t    bitspersample;
+    // Playback Values
+    bool        loop;
+    bool        fadein;
+    bool        fadeout;
+    uint16_t    volume_left;
+    uint16_t    volume_right;
 };
 struct ApolloPicture
 {
@@ -47,7 +48,7 @@ struct ApolloPicture
     bool        endian;
     // Return Values
     uint8_t     *buffer;
-    uint8_t     position;
+    uint32_t    position;
     uint32_t    size;
     uint16_t    width;
     uint16_t    height;
@@ -130,7 +131,10 @@ struct WAVHeader
 
 // ApolloCrossDev C Functions ######################################
 
+// Apollo File Functions
 uint8_t ApolloLoadFile(struct ApolloFile *file);
+
+// Apollo Memory Functions
 
 // Apollo Sound Functions 
 uint8_t ApolloAllocSound( struct ApolloSound *sound);
@@ -151,21 +155,31 @@ uint8_t ApolloShowPicture(struct ApolloPicture *picture);
 void ApolloShowPiP( struct ApolloPicture *picture);
 void ApolloHidePiP();
 void ApolloShowPattern(uint8_t *buffer, uint16_t width, uint16_t height, uint8_t depth);
+void ApolloBackupWBScreen(struct ApolloPicture *picture);
 
 // CPU Operations: Wait for Vertical Blank
 void ApolloWaitVBL();
 
 // ApolloCrossDev Assembler Functions ######################################
-void ApolloFill( _A0(UBYTE* dst), _D3(uint16_t w), _D4(uint16_t h), _D5(uint16_t d), _D6(uint32_t dstmod), _D7(uint32_t value) );
-void ApolloCopy( _A0(UBYTE *s), _A1(UBYTE *d), _D3(UWORD width), _D4(UWORD height), _D5(UWORD spitch), _D6(UWORD dpitch) );
-void ApolloCopy32(_A0(UBYTE *s), _A1(UBYTE *d), _D3(UWORD width), _D4(UWORD height), _D5(UWORD spitch), _D6(UWORD dpitch) ); 
-uint32_t ApolloCPUTick();
-void ApolloCPUDelay( _D0(uint32_t WaitTime));
+
+// Apollo Memory Functions
+void ApolloCopyBlock( _A0(UBYTE *s), _A1(UBYTE *d), _D3(ULONG size));
+void ApolloCopyBlock32(_A0(UBYTE *s), _A1(UBYTE *d), _D3(ULONG size)); 
 void ApolloEndianSwapWordBuffer(_A0(UBYTE *s), _D0(uint32_t l));
 void ApolloEndianSwapLongBuffer(_A0(UBYTE *s), _D0(uint32_t l));
 uint16_t ApolloSwapWord( _D0(uint16_t SwapWord));
 uint32_t ApolloSwapLong( _D0(uint32_t SwapLong));
 uint64_t ApolloSwapOcta( _D0(uint64_t SwapOcta));
+
+// Apollo Picture Functions
+void ApolloFill( _A0(UBYTE* dst), _D3(uint16_t w), _D4(uint16_t h), _D5(uint16_t d), _D6(uint32_t dstmod), _D7(uint32_t value) );
+void ApolloCopyPicture( _A0(UBYTE *s), _A1(UBYTE *d), _D3(UWORD width), _D4(UWORD height), _D5(UWORD spitch), _D6(UWORD dpitch) );
+void ApolloCopyPicture32(_A0(UBYTE *s), _A1(UBYTE *d), _D3(UWORD width), _D4(UWORD height), _D5(UWORD spitch), _D6(UWORD dpitch) ); 
+
+// Apollo CPU Functions
+uint32_t ApolloCPUTick();
+void ApolloCPUDelay( _D0(uint32_t WaitTime));
+
 
 #ifdef __cplusplus
 }

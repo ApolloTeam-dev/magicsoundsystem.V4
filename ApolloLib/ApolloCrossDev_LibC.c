@@ -51,8 +51,8 @@ uint8_t ApolloLoadFile(struct ApolloFile *file)
 	   	ADX(ApolloDebugPutStr( "SUCCESS: File closed\n");)
     }
 
-	AD(sprintf(ApolloDebugMessage, "ApolloLoadFile: %s | Filesize: %d | Offset = %d\n", file->filename, file->size, file->offset);)
-	AD(ApolloDebugPutStr(ApolloDebugMessage);)
+	ADX(sprintf(ApolloDebugMessage, "ApolloLoadFile: %s | Filesize: %d | Offset = %d\n", file->filename, file->size, file->offset);)
+	ADX(ApolloDebugPutStr(ApolloDebugMessage);)
 
 	return APOLLO_SOUND_OK;
 }
@@ -67,29 +67,29 @@ uint8_t ApolloAllocSound( struct ApolloSound *sound)
 	sound->buffer = (uint8_t*)AllocVec(sound->size+31, MEMF_ANY);	// allocate buffer memory with extra 31 bytes for alignment 
 	if (!sound->buffer)
 	{
-		AD(ApolloDebugPutStr( "ApolloAllocPicture: Buffer memory allocation ERROR\n");)
+		ADX(ApolloDebugPutStr( "ApolloAllocPicture: Buffer memory allocation ERROR\n");)
 		return APOLLO_PICTURE_MEMERROR;
 	} else {
-		AD(ApolloDebugPutStr( "ApolloAllocPicture: Buffer memory allocated\n");)
+		ADX(ApolloDebugPutStr( "ApolloAllocPicture: Buffer memory allocated\n");)
 	}
 
 	buffer_aligned = (uint8_t*)(((uint32_t)(sound->buffer+31) & ~31));	// align buffer to 32-byte boundary
 
 	sound->position = buffer_aligned - sound->buffer;				// Report back position of aligned buffer within allocated buffer
 
-	sound->filename[0] = 0;	// Clear filename to indicate memory-only sound
+	//sound->filename[0] = 0;	// Clear filename to indicate memory-only sound
 	
-	AD(sprintf(ApolloDebugMessage, "ApolloAllocSound: Sound Allocated: Size=%d | Position=%d\n",
+	ADX(sprintf(ApolloDebugMessage, "ApolloAllocSound: Sound Allocated: Size=%d | Position=%d\n",
 		 sound->size, sound->position);)
-	AD(ApolloDebugPutStr(ApolloDebugMessage);)
+	ADX(ApolloDebugPutStr(ApolloDebugMessage);)
 
 	return APOLLO_SOUND_OK;
 }
 
 void ApolloFreeSound( struct ApolloSound *sound)
 {
-	AD(sprintf(ApolloDebugMessage, "ApolloFreeSound: Free Sound: %s . . . ", sound->filename);)
-	AD(ApolloDebugPutStr(ApolloDebugMessage);)
+	ADX(sprintf(ApolloDebugMessage, "ApolloFreeSound: Free Sound: %s . . . ", sound->filename);)
+	ADX(ApolloDebugPutStr(ApolloDebugMessage);)
 
 	if (sound->buffer)
 	{
@@ -97,7 +97,7 @@ void ApolloFreeSound( struct ApolloSound *sound)
 		sound->buffer = NULL;
 	}
 
-	AD(ApolloDebugPutStr("Done.\n");)
+	ADX(ApolloDebugPutStr("Done.\n");)
 }
 
 uint8_t ApolloLoadSound( struct ApolloSound *sound)
@@ -232,9 +232,9 @@ uint8_t ApolloLoadSound( struct ApolloSound *sound)
 
 	sound->position = buffer_aligned-sound->buffer;				// Report back position of aligned buffer within allocated buffer
 
-	AD(sprintf(ApolloDebugMessage, "ApolloLoadSound: %s | Filesize: %d | Format: %d | Size = %8d Bytes | SampleRate = %d | Period = %d | Position = %d | Offset = %d\n",
+	ADX(sprintf(ApolloDebugMessage, "ApolloLoadSound: %s | Filesize: %d | Format: %d | Size = %8d Bytes | SampleRate = %d | Period = %d | Position = %d | Offset = %d\n",
 		 sound->filename, file_size, sound->format, sound->size, samplerate_fraction, sound->period, sound->position, offset);)
-	AD(ApolloDebugPutStr(ApolloDebugMessage);)
+	ADX(ApolloDebugPutStr(ApolloDebugMessage);)
 
 	return APOLLO_SOUND_OK;
 }
@@ -258,9 +258,9 @@ uint8_t ApolloPlaySound( struct ApolloSound *sound)
 		sound->channel = channel;
 	}
 
-	AD(sprintf(ApolloDebugMessage, "ApolloPlaySound: %s | Channel = %d | Size = %8d | Vol-L = %d | Vol-R = %d | Loop = %d | Fadein = %d | Period = %d\n",
+	ADX(sprintf(ApolloDebugMessage, "ApolloPlaySound: %s | Channel = %d | Size = %8d | Vol-L = %d | Vol-R = %d | Loop = %d | Fadein = %d | Period = %d\n",
 		 sound->filename, sound->channel, sound->size, sound->volume_left, sound->volume_right, sound->loop, sound->fadein, sound->period);)
-	AD(ApolloDebugPutStr(ApolloDebugMessage);)
+	ADX(ApolloDebugPutStr(ApolloDebugMessage);)
 
 	*((volatile uint32_t*)(0xDFF400 + (sound->channel * 0x10))) = (uint32_t)(sound->buffer+sound->position);  	// Set Channel Pointer
 	*((volatile uint32_t*)(0xDFF404 + (sound->channel * 0x10))) = (uint32_t)(sound->size/8);					// Set Channel Music length (in pairs of stereo sample = 2 * 2 * 16-bit = 64-bit chunksize = filesize in bytes / 8)
@@ -291,8 +291,8 @@ uint8_t ApolloPlaySound( struct ApolloSound *sound)
 
 void ApolloStopSound(struct ApolloSound *sound)
 {
-	AD(sprintf(ApolloDebugMessage, "ApolloStopSound: Stop Sound: %s on channel %d . . . ", sound->filename, sound->channel);)
-	AD(ApolloDebugPutStr(ApolloDebugMessage);)
+	ADX(sprintf(ApolloDebugMessage, "ApolloStopSound: Stop Sound: %s on channel %d . . . ", sound->filename, sound->channel);)
+	ADX(ApolloDebugPutStr(ApolloDebugMessage);)
 
 	if (sound->channel < 4)
 	{ 
@@ -301,12 +301,12 @@ void ApolloStopSound(struct ApolloSound *sound)
 		*((volatile uint16_t*)0xDFF296) = (uint16_t)(0x0000) + (1<<(sound->channel-4));            // DMACON2 = clear AUD4-15 (stop current stream)      
 	}
 
-	AD(ApolloDebugPutStr("Done.\n");)
+	ADX(ApolloDebugPutStr("Done.\n");)
 }
 
 void ApolloStartSound(struct ApolloSound *sound)
 {
-	AD(ApolloDebugPutDec("ApolloStop: Starting audio on channel", sound->channel);)	
+	ADX(ApolloDebugPutDec("ApolloStop: Starting audio on channel", sound->channel);)	
 
 	if (sound->channel < 4)
 	{ 
@@ -371,9 +371,9 @@ uint8_t ApolloAllocPicture( struct ApolloPicture *picture)
 
 	picture->filename = NULL;	// Clear filename to indicate memory-only picture
 	
-	AD(sprintf(ApolloDebugMessage, "ApolloAllocPicture: Picture Allocated: Width=%d | Height=%d | Depth=%d | Size=%d | Position=%d\n",
+	ADX(sprintf(ApolloDebugMessage, "ApolloAllocPicture: Picture Allocated: Width=%d | Height=%d | Depth=%d | Size=%d | Position=%d\n",
 		 picture->width, picture->height, picture->depth, picture->size, picture->position);)
-	AD(ApolloDebugPutStr(ApolloDebugMessage);)
+	ADX(ApolloDebugPutStr(ApolloDebugMessage);)
 
 	return APOLLO_PICTURE_OK;
 }
@@ -587,9 +587,9 @@ uint8_t ApolloLoadPicture(struct ApolloPicture *picture)
 		}
 	}
 
-	AD(sprintf(ApolloDebugMessage, "ApolloLoad: Picture File Loaded: %s | Filesize = %8d | Format: %d | Size = %8d BYTES | Width = %d | Height = %d | Depth = %d | Palette = %d | Position = %d | Offset = %d\n",
+	ADX(sprintf(ApolloDebugMessage, "ApolloLoad: Picture File Loaded: %s | Filesize = %8d | Format: %d | Size = %8d BYTES | Width = %d | Height = %d | Depth = %d | Palette = %d | Position = %d | Offset = %d\n",
 		 picture->filename, file_size, picture->format, picture->size, picture->width, picture->height, picture->depth, picture->palette, picture->position, offset);)
-	AD(ApolloDebugPutStr(ApolloDebugMessage);)
+	ADX(ApolloDebugPutStr(ApolloDebugMessage);)
 
 	return APOLLO_PICTURE_OK;
 }
@@ -658,9 +658,9 @@ uint8_t ApolloShowPicture(struct ApolloPicture *picture)
 		default: return APOLLO_PICTURE_W_ERROR;
 	}
 
-	AD(sprintf(ApolloDebugMessage, "ApolloShowPicture: Width=%d | Height=%d | Depth=%d | Modulo=%d | Position=%d | Gfxmode = %x |\n",
+	ADX(sprintf(ApolloDebugMessage, "ApolloShowPicture: Width=%d | Height=%d | Depth=%d | Modulo=%d | Position=%d | Gfxmode = %x |\n",
 		 picture->width, picture->height, picture->depth, picture->modulo, picture->position, gfx_mode);)
-	AD(ApolloDebugPutStr(ApolloDebugMessage);)
+	ADX(ApolloDebugPutStr(ApolloDebugMessage);)
 
 	*((volatile uint16_t*)0xDFF1F4) = (uint16_t)(gfx_mode);
 	*((volatile uint16_t*)0xDFF1E6) = (int16_t)(picture->modulo); 
@@ -701,6 +701,19 @@ void ApolloShowPattern(uint8_t *buffer, uint16_t width, uint16_t height, uint8_t
 			}
         }
     }
+}
+
+void ApolloBackupWBScreen(struct ApolloPicture *picture)
+{
+	struct Screen *wb_screen;  	  
+	wb_screen = LockPubScreen(NULL);
+    char picture_title[] = "WorkBench Screen Backup";
+    picture->filename 	= picture_title;
+	picture->buffer 	= (uint8_t*)wb_screen->RastPort.BitMap->Planes[0];
+	picture->width 		= (uint16_t)wb_screen->Width;
+	picture->height 	= (uint16_t)wb_screen->Height;
+	picture->depth 		= (uint8_t)(8*(wb_screen->RastPort.BitMap->BytesPerRow / wb_screen->Width));
+	UnlockPubScreen(NULL, wb_screen);
 }
 
 // Apollo CPU Functions

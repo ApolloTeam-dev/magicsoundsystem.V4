@@ -9,7 +9,7 @@
 extern "C"{
 #endif 
 
-#include "ApolloCrossDev_Base.h"
+#include "ApolloCrossDev_Defines.h"
 
 // Global Variables
 extern char ApolloDebugMessage[200];

@@ -1,7 +1,5 @@
 #ifdef APOLLO
-#include "ApolloLib/ApolloCrossDev_Base.h"
 #include "ApolloLib/ApolloCrossDev_Lib.h"
-#include "ApolloLib/ApolloCrossDev_Debug.h"
 #endif
 
 #include <sys/time.h>
@@ -42,6 +40,11 @@ ULONG numColors;
 
 void BackupColors(struct Screen *wbScreen)
 {
+    #ifdef APOLLO
+    AD(sprintf(ApolloDebugMessage, "BackupColors\n");)
+    AD(ApolloDebugPutStr(ApolloDebugMessage);)
+    #endif
+
     if (wbScreen == NULL) return;
 
     // Get the ColorMap from the ViewPort
@@ -84,6 +87,11 @@ void BackupColors(struct Screen *wbScreen)
 // Restore original colors
 void RestoreColors(struct Screen *wbScreen)
 {
+    #ifdef APOLLO
+    AD(sprintf(ApolloDebugMessage, "RestoreColors\n");)
+    AD(ApolloDebugPutStr(ApolloDebugMessage);)
+    #endif
+
     if (wbScreen != NULL && originalColors != NULL)
     {
         // Restore the original colors
@@ -100,7 +108,7 @@ void RestoreColors(struct Screen *wbScreen)
 
 
 int AmigaToSDLKey(int amigaKeyCode) {
-		if (amigaKeyCode>128) amigaKeyCode=amigaKeyCode-128;
+	if (amigaKeyCode>128) amigaKeyCode=amigaKeyCode-128;
     switch (amigaKeyCode) {
         case 27: return SDLK_ESCAPE;         // kbESC
         case 49: return SDLK_1;             // kb1
@@ -282,7 +290,9 @@ extern "C" void MSS_RemoveTimer(void *timerid)
 
 extern "C" void MSS_CloseScreen(void *screenHandle)
 {
+    #ifdef APOLLO
     AD(ApolloDebugPutStr("MSS_CloseScreen\n");)
+    #endif
     
     struct MssAmigaScreen *amigaScreen = (struct MssAmigaScreen *)screenHandle;
     if (!amigaScreen) return;
@@ -415,7 +425,6 @@ static int FileExists(const char *path)
     if (f) { fclose(f); return 1; }
     return 0;
 }
-
 
 ULONG GetMode(int w, int h)
 {
@@ -555,11 +564,12 @@ if (FileExists("env:Settlers2/UseReq"))
     // Here, we either have a mode that roughly matches, or none
     return bestMode;
 }
+
 extern "C" void *MSS_OpenScreen(int width, int height, int depth, int fullscreen, char *title)
 {
 	#ifdef APOLLO
     uint32_t mode = GetMode(width,height);
-    AD(sprintf(ApolloDebugMessage, "MSS_OpenScreen: width=%d height=%d depth=%d fullscreen=%d mode=0x%08x\n", width, height, depth, fullscreen, mode);)
+    AD(sprintf(ApolloDebugMessage, "MSS_OpenScreen: Width=%d | Height=%d | Depth=%d | Fullscreen=%d | Mode=0x%08x\n", width, height, depth, fullscreen, mode);)
     AD(ApolloDebugPutStr(ApolloDebugMessage);)
     #else
     int mode = GetMode(width, height);
@@ -580,20 +590,15 @@ extern "C" void *MSS_OpenScreen(int width, int height, int depth, int fullscreen
 	amigaScreen->height = height;
 
     #ifdef APOLLO
+    ApolloBackupWBScreen(&apollo_wbscreen);
     amigaScreen->screen = LockPubScreen(NULL);
-    char apollo_wbscreen_title[] = "WorkBench Screen Backup";
-    apollo_wbscreen = {apollo_wbscreen_title, 0, 0,
-         amigaScreen->screen->RastPort.BitMap->Planes[0], 0, 0, (uint16_t)amigaScreen->screen->Width, (uint16_t)amigaScreen->screen->Height,
-         (uint8_t)(8*(amigaScreen->screen->RastPort.BitMap->BytesPerRow / amigaScreen->screen->Width)), 0, 0};
     
     char apollo_pip_title[] = "Settlers 2 Apollo PiP Window";
     apollo_pip = {apollo_pip_title, 0, 0, NULL, 0, 0, (uint16_t)width, (uint16_t)height, (uint8_t)depth, 0, 0};
-
     ApolloAllocPicture(&apollo_pip);
-    ApolloFill(apollo_pip.buffer + apollo_pip.position, apollo_pip.width, apollo_pip.height, apollo_pip.depth, 0, 0x01010101);
-
-    apollo_pip.fullscreen = fullscreen; //amigaScreen->fullscreen;
-    amigaScreen->fullscreen = false; // Always open windowed on Apollo, PiP handles fullscreen
+    
+    apollo_pip.fullscreen = fullscreen; // amigaScreen->fullscreen;
+    amigaScreen->fullscreen = false;    // Always open windowed on Apollo, PiP handles fullscreen
     fullscreen = false;
     usingWCP = 1;
 
@@ -760,7 +765,7 @@ extern "C" void *MSS_OpenScreen(int width, int height, int depth, int fullscreen
     // Return the structure as a void pointer
 
     #ifdef APOLLO
-    AD(sprintf(ApolloDebugMessage, "Initialize Apollo SAGA PiP\n");)
+    AD(sprintf(ApolloDebugMessage, "MSS_OpenScreen: Initialize Apollo SAGA PiP and Fullscreen\n");)
     AD(ApolloDebugPutStr(ApolloDebugMessage);)
     *(volatile LONG*)APOLLO_SAGA_PIP_POINTER = (uint32_t)(apollo_pip.buffer + apollo_pip.position);                                                 // Set PiP Bitmap Pointer
     *(volatile int16_t*)APOLLO_SAGA_PIP_X_START = (amigaScreen->window->LeftEdge + amigaScreen->window->BorderLeft +16) ;                           // Set PiP X Start Position (+16 pixel correction needed) 
@@ -770,9 +775,6 @@ extern "C" void *MSS_OpenScreen(int width, int height, int depth, int fullscreen
     *(volatile int16_t*)APOLLO_SAGA_PIP_GFXMODE = APOLLO_SAGA_8_INDEX;                                                                              // Match Apollo SAGA with PiP Overlay Bitmap format                         
     *(volatile int16_t*)APOLLO_SAGA_PIP_MODULO = 0;                                                                                                 // No Modulo (PiP Bitmap width matches PiP Window width)                                   
     *(volatile int16_t*)APOLLO_SAGA_PIP_CLRKEY = 0x0000;                                                                                            // Colorkey = 0 -> ChromKey mode disable -> Overlay Mode Enabled
-
-    AD(sprintf(ApolloDebugMessage, "Enable Apollo SAGA Display\n");)
-    AD(ApolloDebugPutStr(ApolloDebugMessage);)
 
     if(apollo_pip.fullscreen)
     {
@@ -821,11 +823,13 @@ ULONG colors[2 + 3 * 256];  // 2 for the count/first color and the terminator, 3
 
 extern "C" void MSS_SetColors(void *screenHandle, int startCol, int skipCols, int numCols, unsigned char *rvalues, unsigned char *gvalues, unsigned char *bvalues)
 {
+    #ifdef APOLLO
+    ADX(sprintf(ApolloDebugMessage,"MSS_SetColors : StartCol=%d | SkipCols=%d | NumCols=%d\n", startCol, skipCols, numCols);)
+    ADX(ApolloDebugPutStr(ApolloDebugMessage);)  
+    #endif
+
     // Allocate enough space for the color table
     // Each color requires 3 longs (R, G, B), plus one word at the beginning and the terminator
-    
-    struct MssAmigaScreen *amigaScreen = (struct MssAmigaScreen *)screenHandle;
-    if (!amigaScreen || !amigaScreen->screen) return;
 
     // Calculate the starting index after skipping colors
     int colIndex = startCol + skipCols;
@@ -835,11 +839,13 @@ extern "C" void MSS_SetColors(void *screenHandle, int startCol, int skipCols, in
     {
         *(volatile uint32_t*)APOLLO_SAGA_PIPCHK_COL = ((i+colIndex)<<24) + ((uint8_t)rvalues[startCol+i]<<16) + ((uint8_t)gvalues[startCol+i]<<8) + ((uint8_t)bvalues[startCol+i]);
         *(volatile uint32_t*)APOLLO_SAGA_CHUNKY_COL = ((i+colIndex)<<24) + ((uint8_t)rvalues[startCol+i]<<16) + ((uint8_t)gvalues[startCol+i]<<8) + ((uint8_t)bvalues[startCol+i]);
-        //AD(sprintf(ApolloDebugMessage,"Set Color %d: R=%02x G=%02x B=%02x\n",i,rvalues[startCol+i],gvalues[startCol+i],bvalues[startCol+i]);)
-        //AD(ApolloDebugPutStr(ApolloDebugMessage);)
     }
     return;
     #endif
+
+    struct MssAmigaScreen *amigaScreen = (struct MssAmigaScreen *)screenHandle;
+    if (!amigaScreen || !amigaScreen->screen) return;
+
     // Set the first entry: high 16 bits = number of colors, low 16 bits = starting color index
     colors[0] = ((ULONG)numCols << 16) + (ULONG)colIndex;
 
@@ -918,7 +924,6 @@ Uint32 getCurrentTimeInMilliSeconds()
     gettimeofday(&time, NULL);
     return (Uint32)((time.tv_sec * 1000 + time.tv_usec / 1000)/1);
 }
-
 
 extern "C" void MSS_PumpEvents()
 {
@@ -1218,6 +1223,7 @@ rightWentDown = 0;
 
     return res;
 }
+
 extern "C" int MSS_PeepKeyDownEvent(struct MssEvent *event)
 {
     // Ensure you have access to the MssAmigaScreen structure
@@ -1249,7 +1255,6 @@ extern "C" int MSS_PollEvent(struct MssEvent *event)
     }
 	return 1;
 
-
     return 0; // No events to process
 }
 
@@ -1262,7 +1267,7 @@ extern "C" void MSS_FillRect(void *screen, int col, int x, int y, int width, int
 
     #ifdef APOLLO
     ApolloFill(apollo_pip.buffer + apollo_pip.position + x + (y * apollo_pip.width), width, height, apollo_pip.depth, 0, col);
-    AD(sprintf(ApolloDebugMessage,"FillRect Color: %d X: %d Y: %d W: %d H: %d\n",col,x,y,width,height);)
+    AD(sprintf(ApolloDebugMessage,"MSS_FillRect  : Color=%3d | X=%4d | Y=%4d | W=%4d | H=%4d\n", col, x, y, width, height);)
     AD(ApolloDebugPutStr(ApolloDebugMessage);)
     return; 
     #endif
@@ -1328,17 +1333,15 @@ struct Soff
 extern "C" void MSS_DrawArray(void *screen, unsigned char* src, unsigned int x, unsigned int y, unsigned int w, unsigned int h, unsigned int srcwidth, unsigned int dstwidth)
 {
     struct MssAmigaScreen *amigaScreen = (struct MssAmigaScreen*)screen;
-    if (!amigaScreen || !amigaScreen->window || !amigaScreen->window->RPort || !src)
-        return;
-
+    if (!amigaScreen || !amigaScreen->window || !amigaScreen->window->RPort || !src) return;
     struct RastPort *rastPort = amigaScreen->window->RPort;
 
     #ifdef APOLLO
     if (w%32)
     {
-        ApolloCopy( src, apollo_pip.buffer + apollo_pip.position + x + (y * apollo_pip.width), w, h, srcwidth - w, apollo_pip.width - w );
+        ApolloCopyPicture( src, apollo_pip.buffer + apollo_pip.position + x + (y * apollo_pip.width), w, h, srcwidth - w, apollo_pip.width - w );
     } else {
-        ApolloCopy32( src, apollo_pip.buffer + apollo_pip.position + x + (y * apollo_pip.width), w, h, srcwidth - w, apollo_pip.width - w );
+        ApolloCopyPicture32( src, apollo_pip.buffer + apollo_pip.position + x + (y * apollo_pip.width), w, h, srcwidth - w, apollo_pip.width - w );
     }
     return;        
     #endif

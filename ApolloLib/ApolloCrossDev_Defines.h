@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <dirent.h>
 #include <string.h>
 #include <stdarg.h>
 #include <math.h>
@@ -16,7 +17,6 @@
 #include "clib/exec_protos.h"
 #include "clib/graphics_protos.h"
 #include "clib/lowlevel_protos.h"
-
 
 #include <proto/intuition.h>
 #include <proto/dos.h>
@@ -36,7 +36,6 @@
  #define AD(x)
  #define ADX(x) 
 #endif
-
 
 // Apollo Audi (ARNE)
 #define APOLLO_PAL_CLOCK        3546895   // PAL Clock Frequency in Hz
