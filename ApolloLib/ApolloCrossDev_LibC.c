@@ -246,9 +246,9 @@ uint8_t ApolloPlaySound( struct ApolloSound *sound)
 	
 	for (channel=0; channel<16; channel++)
 	{
-		channelfree = ( ( (channel < 4) && ( (*((volatile uint16_t*)0xDFF002) & (1<<channel)) == 0) ) || ( (channel >=4) && (*((volatile uint16_t*)0xDFF202) & (1<<channel)) == 0 ) );
-		ADX(sprintf(ApolloDebugMessage, "ApolloPlaySound: Channel = %d | DMA Channel Free = %s\n", channel, channelfree? "YES":"NO");)
-		ADX(ApolloDebugPutStr(ApolloDebugMessage);)
+		channelfree = ( ( (channel < 4) && ( (*((volatile uint16_t*)0xDFF002) & (1<<channel)) == 0) ) || ( (channel >=4) && (*((volatile uint16_t*)0xDFF202) & (1<<(channel-4))) == 0 ) );
+		AD(sprintf(ApolloDebugMessage, "ApolloPlaySound: Channel = %d | DMA Channel Free = %s\n", channel, channelfree? "YES":"NO");)
+		AD(ApolloDebugPutStr(ApolloDebugMessage);)
 		if (channelfree)  break;
 	}
 	if(channel==16)
@@ -257,10 +257,10 @@ uint8_t ApolloPlaySound( struct ApolloSound *sound)
 	} else {
 		sound->channel = channel;
 	}
-
-	ADX(sprintf(ApolloDebugMessage, "ApolloPlaySound: %s | Channel = %d | Size = %8d | Vol-L = %d | Vol-R = %d | Loop = %d | Fadein = %d | Period = %d\n",
-		 sound->filename, sound->channel, sound->size, sound->volume_left, sound->volume_right, sound->loop, sound->fadein, sound->period);)
-	ADX(ApolloDebugPutStr(ApolloDebugMessage);)
+ 
+	AD(sprintf(ApolloDebugMessage, "ApolloPlaySound: File=%-25s | Size=%8d | Cache=%12d | Channel=%02d | Vol-L = %d | Vol-R = %d | Loop = %d | Fadein = %d | Period = %d\n",
+		 sound->filename, sound->size, sound->size, sound->channel, sound->volume_left, sound->volume_right, sound->loop, sound->fadein, sound->period);)
+	AD(ApolloDebugPutStr(ApolloDebugMessage);)
 
 	*((volatile uint32_t*)(0xDFF400 + (sound->channel * 0x10))) = (uint32_t)(sound->buffer+sound->position);  	// Set Channel Pointer
 	*((volatile uint32_t*)(0xDFF404 + (sound->channel * 0x10))) = (uint32_t)(sound->size/8);					// Set Channel Music length (in pairs of stereo sample = 2 * 2 * 16-bit = 64-bit chunksize = filesize in bytes / 8)
@@ -728,6 +728,302 @@ void ApolloWaitVBL()
 }
 
 
+// Apollo HID Functions
+
+void ApolloJoypad(ApolloJoypadState *JoypadState)
+{
+	UWORD * const Joypad_Pointer  = (UWORD*)0xDFF220;
+	
+	JoypadState->Joypad_Value = *Joypad_Pointer;
+
+	if ((JoypadState->Joypad_Value & 0x8000) == 0x8000) JoypadState->Joypad_LeftX_Delta = 1;
+	else if ((JoypadState->Joypad_Value & 0x4000) == 0x4000) JoypadState->Joypad_LeftX_Delta = -1;
+	else JoypadState->Joypad_LeftX_Delta = 0;
+
+	if ((JoypadState->Joypad_Value & 0x2000) == 0x2000) JoypadState->Joypad_LeftY_Delta = 1;
+	else if ((JoypadState->Joypad_Value & 0x1000) == 0x1000) JoypadState->Joypad_LeftY_Delta = -1;
+	else JoypadState->Joypad_LeftY_Delta = 0;
+
+	if ((JoypadState->Joypad_Value & 0x0004) == 0x0004) JoypadState->Joypad_RightX_Delta = 1;
+	else if ((JoypadState->Joypad_Value & 0x0008) == 0x0008) JoypadState->Joypad_RightX_Delta = -1;
+	else JoypadState->Joypad_RightX_Delta = 0;
+
+	if ((JoypadState->Joypad_Value & 0x0002) == 0x0002) JoypadState->Joypad_RightY_Delta = 1;
+	else if ((JoypadState->Joypad_Value & 0x0010) == 0x0010) JoypadState->Joypad_RightY_Delta = -1;
+	else JoypadState->Joypad_RightY_Delta = 0;
+
+	if ((JoypadState->Joypad_Value & 0x0400) == 0x0400) JoypadState->Joypad_Start = true; else JoypadState->Joypad_Start = false;
+	if ((JoypadState->Joypad_Value & 0x0200) == 0x0200) JoypadState->Joypad_Back = true; else JoypadState->Joypad_Back = false;
+			
+	if ((JoypadState->Joypad_Value & 0x0100) == 0x0100) JoypadState->Joypad_TR = true; else JoypadState->Joypad_TR = false;
+	if ((JoypadState->Joypad_Value & 0x0080) == 0x0080) JoypadState->Joypad_TL = true; else JoypadState->Joypad_TL = false;
+	if ((JoypadState->Joypad_Value & 0x0040) == 0x0040) JoypadState->Joypad_BR = true; else JoypadState->Joypad_BR = false;
+	if ((JoypadState->Joypad_Value & 0x0020) == 0x0020) JoypadState->Joypad_BL = true; else JoypadState->Joypad_BL = false;
+	if ((JoypadState->Joypad_Value & 0x0010) == 0x0010) JoypadState->Joypad_Y = true; else JoypadState->Joypad_Y = false;
+	if ((JoypadState->Joypad_Value & 0x0008) == 0x0008) JoypadState->Joypad_X = true; else JoypadState->Joypad_X = false;
+	if ((JoypadState->Joypad_Value & 0x0004) == 0x0004) JoypadState->Joypad_B = true; else JoypadState->Joypad_B = false;
+	if ((JoypadState->Joypad_Value & 0x0002) == 0x0002) JoypadState->Joypad_A = true; else JoypadState->Joypad_A = false;
+	if ((JoypadState->Joypad_Value & 0x0001) == 0x0001) JoypadState->Joypad_Connect = true; else JoypadState->Joypad_Connect = false;
+	if (JoypadState->Joypad_Value > 1)
+	{
+		ADX(sprintf(ApolloDebugMessage, "Joypad State: Value=%04x | LeftX-Delta=%2d | LeftY-Delta=%2d | RightX-Delta=%2d | RightY-Delta=%2d | Start=%d | Back=%d | TR=%d | TL=%d | BR=%d | BL=%d | Y=%d | X=%d | B=%d | A=%d | Connect=%d\n",
+			JoypadState->Joypad_Value, JoypadState->Joypad_LeftX_Delta, JoypadState->Joypad_LeftY_Delta, JoypadState->Joypad_RightX_Delta, JoypadState->Joypad_RightY_Delta, JoypadState->Joypad_Start, JoypadState->Joypad_Back, JoypadState->Joypad_TR, JoypadState->Joypad_TL, JoypadState->Joypad_BR, JoypadState->Joypad_BL, JoypadState->Joypad_Y, JoypadState->Joypad_X, JoypadState->Joypad_B, JoypadState->Joypad_A, JoypadState->Joypad_Connect);)
+		ADX(ApolloDebugPutStr(ApolloDebugMessage);)
+	}
+}
+
+
+void ApolloMouse(ApolloMouseState *MouseState)
+{
+	UBYTE MouseButtonLeft_Value;	
+	UWORD MouseButtonRight_Value;	
+	UWORD MouseButtonMiddle_Value;
+
+	// Initialize Mouse Buttons
+	MouseState->Button_Left = false;
+	MouseState->Button_Right = false;
+	MouseState->Button_Middle = false;
+	
+	// Read Mouse Buttons 
+	MouseButtonLeft_Value = *((volatile uint8_t*)APOLLO_MOUSE_BUTTON1);
+	if ((MouseButtonLeft_Value & 0x40) == 0) MouseState->Button_Left = true;
+	MouseButtonRight_Value= *((volatile uint16_t*)APOLLO_MOUSE_BUTTON2);
+	if ((MouseButtonRight_Value & 0x400) == 0) MouseState->Button_Right = true;
+	MouseButtonMiddle_Value= *((volatile uint16_t*)APOLLO_MOUSE_BUTTON3);
+	if ((MouseButtonMiddle_Value & 0x400) == 0) MouseState->Button_Middle = true;
+
+	// Read Mouse Movement	
+	MouseState->MouseX_Value 		= *((signed char *)APOLLO_MOUSE_GET_X);
+	MouseState->MouseY_Value 		= *((signed char *)APOLLO_MOUSE_GET_Y);
+	MouseState->MouseX_Value_Delta 	= MouseState->MouseX_Value - MouseState->MouseX_Value_Old;
+	MouseState->MouseY_Value_Delta 	= MouseState->MouseY_Value - MouseState->MouseY_Value_Old;
+	MouseState->MouseX_Value_Old 	= MouseState->MouseX_Value;
+	MouseState->MouseY_Value_Old 	= MouseState->MouseY_Value;
+
+	// Correct Delta for BYTE overflow
+	if (MouseState->MouseX_Value_Delta < -128) MouseState->MouseX_Value_Delta += 256;
+	if (MouseState->MouseX_Value_Delta >  128) MouseState->MouseX_Value_Delta -= 256;
+	if (MouseState->MouseY_Value_Delta < -128) MouseState->MouseY_Value_Delta += 256;
+	if (MouseState->MouseY_Value_Delta >  128) MouseState->MouseY_Value_Delta -= 256;	
+
+	// Check for Mouse Screen Boundaries
+	if (MouseState->MouseX_Value_Delta != 0 || MouseState->MouseY_Value_Delta != 0)
+	{
+		if (MouseState->MouseX_Pointer + MouseState->MouseX_Value_Delta < 1)
+		{
+			MouseState->MouseX_Pointer = 1;
+		} else {
+			if (MouseState->MouseX_Pointer + MouseState->MouseX_Value_Delta > MouseState->MouseX_Pointer_Max)
+			{
+				MouseState->MouseX_Pointer = MouseState->MouseX_Pointer_Max - 1;
+			} else {
+				MouseState->MouseX_Pointer += MouseState->MouseX_Value_Delta;
+			}
+		}	
+
+		if (MouseState->MouseY_Pointer + MouseState->MouseY_Value_Delta <1)
+		{
+			MouseState->MouseY_Pointer = 1;
+		} else {
+			if (MouseState->MouseY_Pointer + MouseState->MouseY_Value_Delta >  MouseState->MouseY_Pointer_Max)
+			{
+				MouseState->MouseY_Pointer = MouseState->MouseY_Pointer_Max - 1;
+			} else {
+				MouseState->MouseY_Pointer += MouseState->MouseY_Value_Delta;	
+			}
+		}
+
+		// Reposition MousePointer Sprite
+		*((volatile uint16_t*)APOLLO_POINTER_SET_X) = (uint16_t)(MouseState->MouseX_Pointer) + 16; 
+		*((volatile uint16_t*)APOLLO_POINTER_SET_Y) = (uint16_t)(MouseState->MouseY_Pointer) +  8;  
+
+		sprintf(ApolloDebugMessage,"Mouse_X = X-Pos:%4d X-New:%4d X-Old:%4d X-Delta:%4d | Mouse_Y = Y-Pos:%4d Y-New:%4d Y-Old:%4d Y-Delta:%4d\n",
+				MouseState->MouseX_Pointer, MouseState->MouseX_Value, MouseState->MouseX_Value_Old, MouseState->MouseX_Value_Delta,
+				MouseState->MouseY_Pointer, MouseState->MouseY_Value, MouseState->MouseY_Value_Old, MouseState->MouseY_Value_Delta);
+		ApolloDebugPutStr(ApolloDebugMessage);
+	} 
+
+	// Translate Mouse Buttons to Mouse ButtonState
+	MouseState->Button_State = 0;
+
+	if( MouseState->Button_Left_Count > 0 ) MouseState->Button_Left_Count--;
+	if( MouseState->Button_Right_Count > 0 ) MouseState->Button_Right_Count--;
+	if( MouseState->Button_Middle_Count > 0 ) MouseState->Button_Middle_Count--;
+
+	if( MouseState->Button_Left == false && MouseState->Button_Left_Old == true )
+	{
+		if( MouseState->Button_Left_Count == 0 )
+		{
+			MouseState->Button_State |= APOLLOMOUSE_LEFTCLICK;
+			MouseState->Button_Left_Count = APOLLOMOUSE_DOUBLECLICKCOUNTER;
+		}
+		else
+		{
+			MouseState->Button_State |= APOLLOMOUSE_LEFTDOUBLECLICK;
+		}
+	}
+
+	if( MouseState->Button_Left == true )
+	{
+		MouseState->Button_State |= APOLLOMOUSE_LEFTDOWN;
+	}
+	
+	if( MouseState->Button_Right == false && MouseState->Button_Right_Old == true )
+	{
+		if( MouseState->Button_Right_Count == 0 )
+		{
+			MouseState->Button_State |= APOLLOMOUSE_RIGHTCLICK;
+			MouseState->Button_Right_Count = APOLLOMOUSE_DOUBLECLICKCOUNTER;
+		}
+		else
+		{
+			MouseState->Button_State |= APOLLOMOUSE_RIGHTDOUBLECLICK;
+		}
+	}
+
+	if( MouseState->Button_Right == true )
+	{
+		MouseState->Button_State |= APOLLOMOUSE_RIGHTDOWN;
+	}
+
+	if( MouseState->Button_Middle == false && MouseState->Button_Middle_Old == true )
+	{
+		if( MouseState->Button_Middle_Count == 0 )
+		{
+			MouseState->Button_State |= APOLLOMOUSE_MIDDLECLICK;
+			MouseState->Button_Middle_Count = APOLLOMOUSE_DOUBLECLICKCOUNTER;
+		}
+		else
+		{
+			MouseState->Button_State |= APOLLOMOUSE_MIDDLEDOUBLECLICK;
+		}
+	}
+
+	if( MouseState->Button_Middle == true )
+	{
+		MouseState->Button_State |= APOLLOMOUSE_MIDDLEDOWN;
+	}
+
+	MouseState->Button_Left_Old = MouseState->Button_Left;
+	MouseState->Button_Right_Old = MouseState->Button_Right;
+	MouseState->Button_Middle_Old = MouseState->Button_Middle;
+
+	return;
+}
+
+
+void ApolloKeyboard(ApolloKeyBoardState *KeyboardState)
+{
+	UBYTE* const 	Keyboard_Pointer = (UBYTE*)0xBFEC01; 
+	UBYTE			Keyboard_Raw, Keyboard_Now;
+
+	Keyboard_Raw = *Keyboard_Pointer;														// retrieve RAW value from register
+	Keyboard_Raw = ~Keyboard_Raw;															// not.b
+	KeyboardState->Current_Key = (UBYTE) ((Keyboard_Raw>>1) | (Keyboard_Raw<<7));			// ror.b #1
+
+	if ((KeyboardState->Current_Key < 127) && (KeyboardState->Current_Key!=KeyboardState->Previous_Key))
+	{
+		KeyboardState->Previous_Key = KeyboardState->Current_Key;							// Use only "Low" KB values (0-127)
+
+		sprintf(ApolloDebugMessage,"Keyboard_Now: %d\n", Keyboard_Now);
+		ApolloDebugPutStr(ApolloDebugMessage);
+
+	} else {
+		KeyboardState->Current_Key = 127;
+	}
+}
+
+
+UBYTE ApolloKeyboardToUnicode(UBYTE KeyboardAmiga)
+{
+	UBYTE KeyboardUnicode;
+
+	switch (KeyboardAmiga)
+	{
+		case 0x0:	return  96;		// '
+		case 0x1:	return  49;		// 1
+		case 0x2:	return  50;		// 2
+		case 0x3:	return  51;		// 3
+		case 0x4:	return  52;		// 4
+		case 0x5:	return  53;		// 5
+		case 0x6:	return  54;		// 6
+		case 0x7:	return  55;		// 7
+		case 0x8:	return  56;		// 8
+		case 0x9:	return  57;		// 9
+		case 0xA:	return  48;		// 0
+		case 0xB:	return  45;		// -
+		case 0xC:	return  61;		// =
+		case 0xD:	return  92;		// Backslash
+
+		case 0xF:	return  48;		// Numpad 0
+		case 0x10:	return  81;		// Q
+		case 0x11:	return  87;		// W
+		case 0x12:	return  69;		// E
+		case 0x13:	return  82;		// R
+		case 0x14:	return  84;		// T
+		case 0x15:	return  89;		// Y
+		case 0x16:	return  85;		// U
+		case 0x17:	return  73;		// I
+		case 0x18:	return  79;		// O
+		case 0x19:	return  80;		// P
+		case 0x1A:	return  91;		// [
+		case 0x1B:	return  93;		// ]
+
+		case 0x1D:	return  49;		// Numpad 1
+		case 0x1E:	return  50;		// Numpad 2
+		case 0x1F:	return  51;		// Numpad 3
+
+		case 0x20:	return  65;		// A
+		case 0x21:	return  83;		// S
+		case 0x22:	return  68;		// D
+		case 0x23:	return  70;		// F
+		case 0x24:	return  71;		// G
+		case 0x25:	return  72;		// H
+		case 0x26:	return  74;		// J
+		case 0x27:	return  75;		// K
+		case 0x28:	return  76;		// L
+		case 0x29:	return  59;		// ;
+		case 0x2A:	return  39;		// '
+
+		case 0x2D:	return  52;		// Numpad 4
+		case 0x2E:	return  53;		// Numpad 5
+		case 0x2F:	return  54;		// Numpad 6
+
+		case 0x31:	return  90;		// Z
+		case 0x32:	return  88;		// X
+		case 0x33:	return  67;		// C
+		case 0x34:	return  86;		// V
+		case 0x35:	return  66;		// B
+		case 0x36:	return  78;		// N
+		case 0x37:	return  77;		// M
+		case 0x38:	return  44;		// ,
+		case 0x39:	return  46;		// .
+		case 0x3A:	return  47;		// Forwardslash
+		
+		case 0x3C:	return  46;		// Numpad .
+		case 0x3D:	return  55;		// Numpad 7
+		case 0x3E:	return  56;		// Numpad 8
+		case 0x3F:	return  57;		// Numpad 9
+
+		case 0x40:	return  32;		// Space
+		case 0x41:	return   8;		// Backspace
+		case 0x42:	return   9;		// Tab
+		case 0x43:	return  13;		// Enter (CR)
+		case 0x44:	return  13;		// Return (CR)
+
+		case 0x45:	return  27;		// Esc
+		case 0x46:	return 127;		// Del
+
+		case 0x4A:	return  45;		// -
+
+		case 0x5A:	return  40;		// (
+		case 0x5B:	return  41;		// )
+		case 0x5C:	return  47;		// Forwardslash
+		case 0x5D:	return  42;		// *
+	}
+
+	return 0;
+}
 
 
 

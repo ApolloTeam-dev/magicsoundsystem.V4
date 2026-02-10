@@ -10,6 +10,7 @@
 
 #ifndef APOLLO
 #define bool int
+#else
 #endif
 
 typedef int (*MSS_OpenWaveFunc)(const char*, unsigned char**, unsigned int*, int);

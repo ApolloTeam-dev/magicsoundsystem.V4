@@ -129,6 +129,63 @@ struct WAVHeader
     uint32_t    data_size;
 };
 
+typedef struct
+{
+	uint8_t Current_Key;
+	uint8_t Previous_Key;
+} ApolloKeyBoardState;
+
+
+typedef struct
+{
+	UWORD Joypad_Value;
+    BYTE Joypad_LeftX_Delta;
+	BYTE Joypad_LeftY_Delta;
+    BYTE Joypad_RightX_Delta;
+	BYTE Joypad_RightY_Delta;
+    bool Joypad_Start;
+	bool Joypad_Back;
+	bool Joypad_TR;
+	bool Joypad_TL;
+	bool Joypad_BR;
+	bool Joypad_BL;
+	bool Joypad_Y;
+	bool Joypad_X;
+	bool Joypad_B;
+	bool Joypad_A;
+	bool Joypad_Connect;
+} ApolloJoypadState;
+
+typedef struct
+{
+	WORD	MouseX_Pointer;
+	WORD	MouseY_Pointer;
+	WORD	MouseX_Pointer_Max;
+	WORD	MouseY_Pointer_Max;
+
+	WORD	MouseX_Value;
+	WORD	MouseY_Value;
+	WORD	MouseX_Value_Old;
+	WORD	MouseY_Value_Old;
+	WORD	MouseX_Value_Delta;
+	WORD	MouseY_Value_Delta;
+
+	bool	Button_Left;			// Actual state for Buttons	
+	bool	Button_Right;
+	bool	Button_Middle;
+	
+	bool	Button_Left_Old;		// Previous state for Buttons	
+	bool	Button_Right_Old;
+	bool	Button_Middle_Old;
+	
+	uint16_t	Button_State;			// Interpreted Button Action (see table below)
+	uint16_t	Button_Left_Count;
+	uint16_t	Button_Right_Count;
+	uint16_t	Button_Middle_Count;
+} ApolloMouseState;
+
+
+
 // ApolloCrossDev C Functions ######################################
 
 // Apollo File Functions
@@ -157,24 +214,30 @@ void ApolloHidePiP();
 void ApolloShowPattern(uint8_t *buffer, uint16_t width, uint16_t height, uint8_t depth);
 void ApolloBackupWBScreen(struct ApolloPicture *picture);
 
-// CPU Operations: Wait for Vertical Blank
+// Apollo CPU Functions
 void ApolloWaitVBL();
+
+// Apollo HID Functions
+void ApolloMouse(ApolloMouseState *MouseState);
+void ApolloJoypad(ApolloJoypadState *JoypadState);
+void ApolloKeyboard(ApolloKeyBoardState *KeyboardState);
+uint8_t ApolloKeyboardToUnicode(uint8_t KeyboardAmiga);
 
 // ApolloCrossDev Assembler Functions ######################################
 
 // Apollo Memory Functions
-void ApolloCopyBlock( _A0(UBYTE *s), _A1(UBYTE *d), _D3(ULONG size));
-void ApolloCopyBlock32(_A0(UBYTE *s), _A1(UBYTE *d), _D3(ULONG size)); 
-void ApolloEndianSwapWordBuffer(_A0(UBYTE *s), _D0(uint32_t l));
-void ApolloEndianSwapLongBuffer(_A0(UBYTE *s), _D0(uint32_t l));
+void ApolloCopyBlock( _A0(uint8_t *s), _A1(uint8_t *d), _D3(ULONG size));
+void ApolloCopyBlock32(_A0(uint8_t *s), _A1(uint8_t *d), _D3(ULONG size)); 
+void ApolloEndianSwapWordBuffer(_A0(uint8_t *s), _D0(uint32_t l));
+void ApolloEndianSwapLongBuffer(_A0(uint8_t *s), _D0(uint32_t l));
 uint16_t ApolloSwapWord( _D0(uint16_t SwapWord));
 uint32_t ApolloSwapLong( _D0(uint32_t SwapLong));
 uint64_t ApolloSwapOcta( _D0(uint64_t SwapOcta));
 
 // Apollo Picture Functions
-void ApolloFill( _A0(UBYTE* dst), _D3(uint16_t w), _D4(uint16_t h), _D5(uint16_t d), _D6(uint32_t dstmod), _D7(uint32_t value) );
-void ApolloCopyPicture( _A0(UBYTE *s), _A1(UBYTE *d), _D3(UWORD width), _D4(UWORD height), _D5(UWORD spitch), _D6(UWORD dpitch) );
-void ApolloCopyPicture32(_A0(UBYTE *s), _A1(UBYTE *d), _D3(UWORD width), _D4(UWORD height), _D5(UWORD spitch), _D6(UWORD dpitch) ); 
+void ApolloFill( _A0(uint8_t* dst), _D3(uint16_t w), _D4(uint16_t h), _D5(uint16_t d), _D6(uint32_t dstmod), _D7(uint32_t value) );
+void ApolloCopyPicture( _A0(uint8_t *s), _A1(uint8_t *d), _D3(uint16_t width), _D4(uint16_t height), _D5(uint16_t spitch), _D6(uint16_t dpitch) );
+void ApolloCopyPicture32(_A0(uint8_t *s), _A1(uint8_t *d), _D3(uint16_t width), _D4(uint16_t height), _D5(uint16_t spitch), _D6(uint16_t dpitch) ); 
 
 // Apollo CPU Functions
 uint32_t ApolloCPUTick();

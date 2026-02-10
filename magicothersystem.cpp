@@ -31,7 +31,15 @@
 
 #ifdef APOLLO
 extern char ApolloDebugMessage[200];
-ULONG FrameCounter = 0;
+ApolloJoypadState apollo_joypad;
+struct IOStdReq *input_io;
+struct MsgPort *input_mp;
+struct InputEvent input_event;
+struct IEPointerPixel pointer_pixel;
+uint16_t old_x = 0;
+uint16_t old_y = 0;
+uint16_t oldleftPressed = 0;
+uint16_t oldrightPressed = 0;
 #endif
 
 struct Screen *wbScreen;
@@ -223,6 +231,12 @@ void pushEventToQueue(struct MssEvent event)
         eventQueue[eventQueueEnd].key = event.key;
         eventQueue[eventQueueEnd].state = event.state;		
         eventQueueEnd = (eventQueueEnd + 1) % MAX_EVENTS;
+
+        #ifdef APOLLO
+        ADX(sprintf(ApolloDebugMessage, "Event Pushed: Type=%d | Key=%d | State=%d\n", event.type, event.key, event.state);)
+        ADX(ApolloDebugPutStr(ApolloDebugMessage);)
+        #endif
+
     } else 
 	{
 		eventQueueStart = (eventQueueStart + 1) % MAX_EVENTS;
@@ -344,6 +358,9 @@ extern "C" void MSS_CloseScreen(void *screenHandle)
         ApolloHidePiP();
     }
     ApolloFreePicture(&apollo_pip);
+    CloseDevice((IORequest*)input_io);
+    DeleteExtIO((IORequest*)input_io);
+    DeletePort(input_mp);
     #endif
 }
 
@@ -571,6 +588,9 @@ extern "C" void *MSS_OpenScreen(int width, int height, int depth, int fullscreen
     uint32_t mode = GetMode(width,height);
     AD(sprintf(ApolloDebugMessage, "MSS_OpenScreen: Width=%d | Height=%d | Depth=%d | Fullscreen=%d | Mode=0x%08x\n", width, height, depth, fullscreen, mode);)
     AD(ApolloDebugPutStr(ApolloDebugMessage);)
+     if (input_mp = CreatePort(0,0) )
+        if (input_io = (struct IOStdReq *) CreateExtIO(input_mp,sizeof(struct IOStdReq)) )
+            if (OpenDevice("input.device", 0L, (struct IORequest *)input_io, 0)) ApolloDebugPutStr("input.device did not open\n");
     #else
     int mode = GetMode(width, height);
     #endif
@@ -954,39 +974,46 @@ extern "C" void MSS_PumpEvents()
 			{
 				if (msg->Code==IECODE_LBUTTON) 
 				{
-
 					currentLeftButton = 1;
 					leftWentDown = 1;
-					newEvent.type = 4;  // Mouse button event
+					#ifndef APOLLO
+                    newEvent.type = 4;  // Mouse button event
                     newEvent.key = 1;   // Left button
                     newEvent.state = currentLeftButton;
-                    pushEventToQueue(newEvent);				
+                    pushEventToQueue(newEvent);
+                    #endif				
 				} 
 				else if (msg->Code==IECODE_LBUTTON+128)
 				{
 						currentLeftButton = 0;
-						newEvent.type = 4;  // Mouse button event
-						newEvent.key = 1;   // Left button
-						newEvent.state = currentLeftButton;
-						pushEventToQueue(newEvent);									
+						#ifndef APOLLO
+                        newEvent.type = 4;  // Mouse button event
+                        newEvent.key = 1;   // Left button
+                        newEvent.state = currentLeftButton;
+                        pushEventToQueue(newEvent);
+                        #endif								
 				}
 				else if (msg->Code==IECODE_RBUTTON) 
 				{
-					currentRightButton = 1;
+                    currentRightButton = 1;
 					rightWentDown = 1;
-					newEvent.type = 4;  // Mouse button event
+					#ifndef APOLLO
+                    newEvent.type = 4;  // Mouse button event
                     newEvent.key = 2;   // Right button
                     newEvent.state = currentRightButton;
-                    pushEventToQueue(newEvent);						
+                    pushEventToQueue(newEvent);
+                    #endif						
 				}
 				else if (msg->Code==IECODE_RBUTTON+128)
 				{
-						currentRightButton = 0;
-						newEvent.type = 4;  // Mouse button event
+                        currentRightButton = 0;
+                        #ifndef APOLLO
+                        newEvent.type = 4;  // Mouse button event
 						newEvent.key = 2;   // Left button
 						newEvent.state = currentRightButton;
 						pushEventToQueue(newEvent);								
-				}
+                        #endif
+                }
 			}			
 			break;
 			case IDCMP_RAWKEY:
@@ -1075,7 +1102,7 @@ int rightPressed = 0;
 
 extern "C" int MSS_GetMouseState(int *x, int *y)
 {
-	int l,r;
+    int l,r;
 	int joychanged = 0;
     static struct MssEvent newEvent;    	
 	int mouseButtons;
@@ -1085,14 +1112,67 @@ extern "C" int MSS_GetMouseState(int *x, int *y)
     // Access mouse coordinates directly from the window structure
     *x = amigaScreen->window->MouseX; // Replace with the actual field name for mouse X
     *y = amigaScreen->window->MouseY; // Replace with the actual field name for mouse Y
-	
-    #ifdef APOLLO
+
+	#ifdef APOLLO
+    ApolloJoypad(&apollo_joypad);
+    if((apollo_joypad.Joypad_LeftX_Delta!=0 || apollo_joypad.Joypad_LeftY_Delta!=0))
+    {
+        if(apollo_joypad.Joypad_LeftX_Delta!=0) *x += (apollo_joypad.Joypad_LeftX_Delta<<3);
+        if(apollo_joypad.Joypad_LeftY_Delta!=0) *y += (apollo_joypad.Joypad_LeftY_Delta<<3);
+            
+        input_event.ie_Class = IECLASS_POINTERPOS;
+        input_event.ie_X = *x;                              // Mouse X Position
+        input_event.ie_Y = *y;                              // Mouse Y Position
+        input_event.ie_Qualifier = 0;                       // Absolute position event
+        input_io->io_Data = (APTR)&input_event;
+        input_io->io_Command = IND_WRITEEVENT;               // Command to write an input event
+        input_io->io_Length = sizeof(struct InputEvent);
+        DoIO((IORequest*)input_io);                             // Send request to move pointer 
+    }
+
+    if(apollo_joypad.Joypad_A)
+    {
+        currentLeftButton = 1;
+        leftPressed = 1;
+        leftWentDown = 1;
+    } else {
+        if(leftPressed ==1) 
+        {
+            currentLeftButton = 0;
+            leftPressed = 0;
+        }
+    }
+
+    if(apollo_joypad.Joypad_B)
+    {
+        currentRightButton = 1;
+        rightPressed = 1;
+        rightWentDown = 1;
+    } else {
+        if(rightPressed == 1) 
+        {
+            currentRightButton = 0;
+            rightPressed = 0;
+        }
+    }
+
     if (apollo_pip.fullscreen == 0)
 	{
 		*x = *x - amigaScreen->window->BorderLeft;
 		*y = *y - amigaScreen->window->BorderTop;
 	}
-	#else
+
+    /*ADX(if(*x != old_x || *y != old_y ||  leftPressed != oldleftPressed || rightPressed != oldrightPressed ) 
+    {
+        AD(sprintf(ApolloDebugMessage,"| *x = %4d -> %4d | *y = %4d -> %4d | Left = %1d | Right = %1d |\n", old_x, *x, old_y, *y, leftPressed, rightPressed);)
+        AD(ApolloDebugPutStr(ApolloDebugMessage);)
+        old_x = *x;
+        old_y = *y;
+        oldleftPressed = leftPressed;
+        oldrightPressed = rightPressed;
+    })*/
+
+   	#else
 	if (amigaScreen->fullscreen==0)
 	{
 		*x = *x - amigaScreen->window->BorderLeft;
@@ -1103,16 +1183,17 @@ extern "C" int MSS_GetMouseState(int *x, int *y)
 	l = currentLeftButton;
 	r = currentRightButton;
 	mouseButtons = 0;
-if (leftWentDown)  l = 1;
-if (rightWentDown) r = 1;
+    if (leftWentDown)  l = 1;
+    if (rightWentDown) r = 1;
 
-if (l) mouseButtons |= 1;
-if (r) mouseButtons |= 4;
+    if (l) mouseButtons |= 1;
+    if (r) mouseButtons |= 4;
 
-// Latches nach dem Auslesen löschen
-leftWentDown = 0;
-rightWentDown = 0;
+    // Latches nach dem Auslesen löschen
+    leftWentDown = 0;
+    rightWentDown = 0;
 
+    #ifndef APOLLO
 	if (LowLevelBase)
 	{
 		int joyState = 0;
@@ -1213,8 +1294,9 @@ rightWentDown = 0;
 			pushEventToQueue(newEvent);				
 		}
 	}
-	
-	int res;
+    #endif
+
+    int res;
 	
 	if (leftPressed) mouseButtons|=16;
 	if (rightPressed) mouseButtons|=32; 
@@ -1267,8 +1349,8 @@ extern "C" void MSS_FillRect(void *screen, int col, int x, int y, int width, int
 
     #ifdef APOLLO
     ApolloFill(apollo_pip.buffer + apollo_pip.position + x + (y * apollo_pip.width), width, height, apollo_pip.depth, 0, col);
-    AD(sprintf(ApolloDebugMessage,"MSS_FillRect  : Color=%3d | X=%4d | Y=%4d | W=%4d | H=%4d\n", col, x, y, width, height);)
-    AD(ApolloDebugPutStr(ApolloDebugMessage);)
+    ADX(sprintf(ApolloDebugMessage,"MSS_FillRect  : Color=%3d | X=%4d | Y=%4d | W=%4d | H=%4d\n", col, x, y, width, height);)
+    ADX(ApolloDebugPutStr(ApolloDebugMessage);)
     return; 
     #endif
 
