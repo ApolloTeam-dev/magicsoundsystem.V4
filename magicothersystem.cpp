@@ -40,6 +40,12 @@ uint16_t old_x = 0;
 uint16_t old_y = 0;
 uint16_t oldleftPressed = 0;
 uint16_t oldrightPressed = 0;
+uint8_t apollo_mousewheel = 0;
+uint8_t apollo_mousewheel_old = 0;
+uint16_t apollo_mousewheel_button = 0;
+
+uint16_t apollo_mousewheel_button_old = 0;
+bool apollo_mousewheel_button_pressed = false;
 #endif
 
 struct Screen *wbScreen;
@@ -233,8 +239,8 @@ void pushEventToQueue(struct MssEvent event)
         eventQueueEnd = (eventQueueEnd + 1) % MAX_EVENTS;
 
         #ifdef APOLLO
-        ADX(sprintf(ApolloDebugMessage, "Event Pushed: Type=%d | Key=%d | State=%d\n", event.type, event.key, event.state);)
-        ADX(ApolloDebugPutStr(ApolloDebugMessage);)
+        AD(sprintf(ApolloDebugMessage, "Event Pushed: Type=%d | Key=%d | State=%d\n", event.type, event.key, event.state);)
+        AD(ApolloDebugPutStr(ApolloDebugMessage);)
         #endif
 
     } else 
@@ -251,6 +257,13 @@ int popEventFromQueue(struct MssEvent *event)
 	    event->key = eventQueue[eventQueueStart].key;
         event->state = eventQueue[eventQueueStart].state;		
         eventQueueStart = (eventQueueStart + 1) % MAX_EVENTS;
+
+        #ifdef APOLLO
+        AD(sprintf(ApolloDebugMessage, "Event Popped: Type=%d | Key=%d | State=%d\n", event->type, event->key, event->state);)
+        AD(ApolloDebugPutStr(ApolloDebugMessage);)
+        #endif
+
+
         return 1;
     }
     return 0;
@@ -1086,7 +1099,36 @@ extern "C" void MSS_PumpEvents()
 			break;
 		}
 		ReplyMsg((struct Message *)msg);
-	}		
+	}
+    
+    #ifdef APOLLO
+    apollo_mousewheel = *((volatile uint16_t*)APOLLO_MOUSE_WHEEL);
+    apollo_mousewheel_button = *((volatile uint16_t*)APOLLO_MOUSE_BUTTON23);
+    if (apollo_mousewheel != apollo_mousewheel_old)
+    {
+        AD(sprintf(ApolloDebugMessage,"Mouse Wheel = %d \n", apollo_mousewheel);)
+        AD(ApolloDebugPutStr(ApolloDebugMessage);)
+        apollo_mousewheel_old = apollo_mousewheel;
+
+        newEvent.type = 1;  // Keyboard event
+        newEvent.key = 122;   // Zoom In/Out
+        newEvent.state = 1;
+        pushEventToQueue(newEvent);
+    }
+
+    apollo_mousewheel_button_pressed = (apollo_mousewheel_button & 0x0100) == 0; 
+    if (apollo_mousewheel_button_pressed && (apollo_mousewheel_button != apollo_mousewheel_button_old))
+    {
+        AD(sprintf(ApolloDebugMessage,"Pressed = %d\n", apollo_mousewheel_button_pressed);)
+        AD(ApolloDebugPutStr(ApolloDebugMessage);)
+        
+        newEvent.type = 1;  // Keyboard event
+        newEvent.key = 118;   // Accelerate On/Off
+        newEvent.state = 1;
+        pushEventToQueue(newEvent);
+    }
+    apollo_mousewheel_button_old = apollo_mousewheel_button;
+    #endif
 }
 
 SDL_Joystick *joystick = 0;

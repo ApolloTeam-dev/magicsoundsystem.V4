@@ -172,7 +172,7 @@ typedef struct
 
 	bool	Button_Left;			// Actual state for Buttons	
 	bool	Button_Right;
-	bool	Button_Middle;
+	UBYTE	Button_Middle;
 	
 	bool	Button_Left_Old;		// Previous state for Buttons	
 	bool	Button_Right_Old;

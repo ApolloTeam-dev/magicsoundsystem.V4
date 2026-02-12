@@ -247,8 +247,8 @@ uint8_t ApolloPlaySound( struct ApolloSound *sound)
 	for (channel=0; channel<16; channel++)
 	{
 		channelfree = ( ( (channel < 4) && ( (*((volatile uint16_t*)0xDFF002) & (1<<channel)) == 0) ) || ( (channel >=4) && (*((volatile uint16_t*)0xDFF202) & (1<<(channel-4))) == 0 ) );
-		AD(sprintf(ApolloDebugMessage, "ApolloPlaySound: Channel = %d | DMA Channel Free = %s\n", channel, channelfree? "YES":"NO");)
-		AD(ApolloDebugPutStr(ApolloDebugMessage);)
+		ADX(sprintf(ApolloDebugMessage, "ApolloPlaySound: Channel = %d | DMA Channel Free = %s\n", channel, channelfree? "YES":"NO");)
+		ADX(ApolloDebugPutStr(ApolloDebugMessage);)
 		if (channelfree)  break;
 	}
 	if(channel==16)
@@ -258,26 +258,26 @@ uint8_t ApolloPlaySound( struct ApolloSound *sound)
 		sound->channel = channel;
 	}
  
-	AD(sprintf(ApolloDebugMessage, "ApolloPlaySound: File=%-25s | Size=%8d | Cache=%12d | Channel=%02d | Vol-L = %d | Vol-R = %d | Loop = %d | Fadein = %d | Period = %d\n",
+	AD(sprintf(ApolloDebugMessage, "ApolloPlaySound: File=%-25s | Size=%8d | Cache=%12d | Channel=%02d | Vol-L = %3d | Vol-R = %3d | Loop = %d | Fadein = %d | Period = %3d |\n",
 		 sound->filename, sound->size, sound->size, sound->channel, sound->volume_left, sound->volume_right, sound->loop, sound->fadein, sound->period);)
 	AD(ApolloDebugPutStr(ApolloDebugMessage);)
 
 	*((volatile uint32_t*)(0xDFF400 + (sound->channel * 0x10))) = (uint32_t)(sound->buffer+sound->position);  	// Set Channel Pointer
 	*((volatile uint32_t*)(0xDFF404 + (sound->channel * 0x10))) = (uint32_t)(sound->size/8);					// Set Channel Music length (in pairs of stereo sample = 2 * 2 * 16-bit = 64-bit chunksize = filesize in bytes / 8)
-	*((volatile uint16_t*)(0xDFF408 + (sound->channel * 0x10))) = 0;                					// Set Channel Volume to Zero 
+	*((volatile uint16_t*)(0xDFF408 + (sound->channel * 0x10))) = 0;                							// Set Channel Volume to Zero 
 
 	if (sound->loop)
 	{
-		*((volatile uint16_t*)(0xDFF40A + (sound->channel * 0x10))) = (uint16_t)0x0005;            // %0101 = $05 - Sample 16bit (bit0 = 1) / OneShot Disabled (bit1 = 0) / Stereo Enabled (bit2 = 1)
+		*((volatile uint16_t*)(0xDFF40A + (sound->channel * 0x10))) = (uint16_t)0x0005;            				// %0101 = $05 - Sample 16bit (bit0 = 1) / OneShot Disabled (bit1 = 0) / Stereo Enabled (bit2 = 1)
 	} else {
-		*((volatile uint16_t*)(0xDFF40A + (sound->channel * 0x10))) = (uint16_t)0x0007;            // %0111 = $07 - Sample 16bit (bit0 = 1) / OneShot Enabled (bit1 = 1) / Stereo Enabled (bit2 = 1)
+		*((volatile uint16_t*)(0xDFF40A + (sound->channel * 0x10))) = (uint16_t)0x0007;            				// %0111 = $07 - Sample 16bit (bit0 = 1) / OneShot Enabled (bit1 = 1) / Stereo Enabled (bit2 = 1)
 	}
-	*((volatile uint16_t*)(0xDFF40C + (sound->channel * 0x10))) = (uint16_t)sound->period;			// PERIOD= 3640000 * (1/44100 Hz)
+	*((volatile uint16_t*)(0xDFF40C + (sound->channel * 0x10))) = (uint16_t)sound->period;						// PERIOD= 3640000 * (1/44100 Hz)
 	if (sound->channel < 4)
 	{ 
-		*((volatile uint16_t*)0xDFF096) = (uint16_t)(0x8000) + (1<<sound->channel);                // DMACON = enable DMA and enable DMA for specific channel AUD0-3 (start current stream)    
+		*((volatile uint16_t*)0xDFF096) = (uint16_t)(0x8000) + (1<<sound->channel);                				// DMACON Write  = enable DMA and enable DMA for specific channel AUD0-3 (start current stream)    
 	} else {
-		*((volatile uint16_t*)0xDFF296) = (uint16_t)(0x8000) + (1<<(sound->channel-4));            // DMACON = enable DMA and enable DMA for specific channel AUD4-15 (start current stream)       
+		*((volatile uint16_t*)0xDFF296) = (uint16_t)(0x8000) + (1<<(sound->channel-4));            				// DMACON2 Write = enable DMA and enable DMA for specific channel AUD4-15 (start current stream)       
 	}
 
 	if(sound->fadein)
@@ -772,12 +772,11 @@ void ApolloJoypad(ApolloJoypadState *JoypadState)
 	}
 }
 
-
 void ApolloMouse(ApolloMouseState *MouseState)
 {
 	UBYTE MouseButtonLeft_Value;	
-	UWORD MouseButtonRight_Value;	
-	UWORD MouseButtonMiddle_Value;
+	UBYTE MouseButtonRight_Value;	
+	UBYTE MouseButtonMiddle_Value;
 
 	// Initialize Mouse Buttons
 	MouseState->Button_Left = false;
@@ -787,10 +786,9 @@ void ApolloMouse(ApolloMouseState *MouseState)
 	// Read Mouse Buttons 
 	MouseButtonLeft_Value = *((volatile uint8_t*)APOLLO_MOUSE_BUTTON1);
 	if ((MouseButtonLeft_Value & 0x40) == 0) MouseState->Button_Left = true;
-	MouseButtonRight_Value= *((volatile uint16_t*)APOLLO_MOUSE_BUTTON2);
+	MouseButtonRight_Value= *((volatile uint16_t*)APOLLO_MOUSE_BUTTON23);
 	if ((MouseButtonRight_Value & 0x400) == 0) MouseState->Button_Right = true;
-	MouseButtonMiddle_Value= *((volatile uint16_t*)APOLLO_MOUSE_BUTTON3);
-	if ((MouseButtonMiddle_Value & 0x400) == 0) MouseState->Button_Middle = true;
+	MouseState->Button_Middle = *((volatile uint16_t*)APOLLO_MOUSE_WHEEL);
 
 	// Read Mouse Movement	
 	MouseState->MouseX_Value 		= *((signed char *)APOLLO_MOUSE_GET_X);

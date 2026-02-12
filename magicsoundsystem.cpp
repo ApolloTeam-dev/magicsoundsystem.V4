@@ -882,8 +882,8 @@ extern "C" void MSS_Play(void *handle, double _vol, double _pan, int looped, boo
 		apollo_sound.period = sound->wavstreamfreq;
 		if(apollo_sound.size > 10000000)
 		{
-			apollo_sound.volume_left = 32;
-			apollo_sound.volume_right = 32;
+			apollo_sound.volume_left = 6;
+			apollo_sound.volume_right = 6;
 		} else
 		{
 			apollo_sound.volume_left = (uint8_t)(_vol * 127);
@@ -936,7 +936,7 @@ extern "C" void MSS_Stop(void *handle)
 		apollo_sound.channel = sound->wavstreamchannels;
 		apollo_sound.size = sound->audioLength;
 		
-		ApolloStopSound(&apollo_sound);
+		if(apollo_sound.size > 10000000) ApolloStopSound(&apollo_sound);
 		sound->playing = false;	
 
 		AD(sprintf(ApolloDebugMessage, "MSS_Stop      : File=%-25s | Size=%8d | Channel=%02d\n", apollo_sound.filename, apollo_sound.size, apollo_sound.channel);)
@@ -1453,9 +1453,9 @@ extern "C" void *MSS_LoadSample(const char* name)
 	sound->audioLength 		= ApolloSoundCacheMap[name].size;
 	sound->wavstreamfreq 	= ApolloSoundCacheMap[name].period;
 
-	AD(sprintf(ApolloDebugMessage, "MSS_LoadSample : File=%-25s | Size=%8d | Cache=%12d | Period=%5d \n",
+	ADX(sprintf(ApolloDebugMessage, "MSS_LoadSample : File=%-25s | Size=%8d | Cache=%12d | Period=%5d \n",
 		name, ApolloSoundCacheMap[name].filename, sound->position, sound->audioLength, sound->wavstreamfreq);)
-	AD(ApolloDebugPutStr(ApolloDebugMessage);)
+	ADX(ApolloDebugPutStr(ApolloDebugMessage);)
 
 	return sound;
 	#endif

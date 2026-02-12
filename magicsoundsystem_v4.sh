@@ -48,7 +48,7 @@ $PREFIX/bin/m68k-amigaos-gcc -noixemul -O3 -m68080 -ffast-math -fomit-frame-poin
 rm -f *.o Apollo/*.o
 
 if [ -f magicsystem.dll ]; then
-    $ACP magicsystem.dll 192.168.2.203:Programs/Games/Settlers2
+    $ACP magicsystem.dll 192.168.2.153:Programs/Games/Settlers2
 fi
 
 
