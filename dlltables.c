@@ -167,6 +167,12 @@ int  DLL_Init(void)
 void  DLL_DeInit(void)
 {
 	#ifdef APOLLO
+	for(uint8_t channel; channel <16; channel++)
+	{
+		struct ApolloSound apollo_sound;
+		apollo_sound.channel = channel;
+		ApolloStopSound(&apollo_sound);
+	}
 	AD(ApolloDebugPutStr("\nApollo Serial Debug - END ******************************************************\\nn");)
 	#endif 
 }

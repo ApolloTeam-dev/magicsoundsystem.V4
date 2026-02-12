@@ -626,8 +626,10 @@ extern "C" void *MSS_OpenScreen(int width, int height, int depth, int fullscreen
     ApolloBackupWBScreen(&apollo_wbscreen);
     amigaScreen->screen = LockPubScreen(NULL);
     
-    char apollo_pip_title[] = "Settlers 2 Apollo PiP Window";
-    apollo_pip = {apollo_pip_title, 0, 0, NULL, 0, 0, (uint16_t)width, (uint16_t)height, (uint8_t)depth, 0, 0};
+    strcpy(apollo_pip.filename, "Settlers 2 Apollo PiP Window");
+    apollo_pip.width = (uint16_t)width;
+    apollo_pip.height = (uint16_t)height;
+    apollo_pip.depth = (uint8_t)depth;
     ApolloAllocPicture(&apollo_pip);
     
     apollo_pip.fullscreen = fullscreen; // amigaScreen->fullscreen;

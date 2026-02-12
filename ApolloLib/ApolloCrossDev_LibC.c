@@ -369,7 +369,7 @@ uint8_t ApolloAllocPicture( struct ApolloPicture *picture)
 
 	picture->position = buffer_aligned - picture->buffer;				// Report back position of aligned buffer within allocated buffer
 
-	picture->filename = NULL;	// Clear filename to indicate memory-only picture
+	strcpy(picture->filename, "");	// Clear filename to indicate memory-only picture
 	
 	ADX(sprintf(ApolloDebugMessage, "ApolloAllocPicture: Picture Allocated: Width=%d | Height=%d | Depth=%d | Size=%d | Position=%d\n",
 		 picture->width, picture->height, picture->depth, picture->size, picture->position);)
@@ -707,8 +707,7 @@ void ApolloBackupWBScreen(struct ApolloPicture *picture)
 {
 	struct Screen *wb_screen;  	  
 	wb_screen = LockPubScreen(NULL);
-    char picture_title[] = "WorkBench Screen Backup";
-    picture->filename 	= picture_title;
+    strcpy(picture->filename, "WorkBench Screen Backup");
 	picture->buffer 	= (uint8_t*)wb_screen->RastPort.BitMap->Planes[0];
 	picture->width 		= (uint16_t)wb_screen->Width;
 	picture->height 	= (uint16_t)wb_screen->Height;

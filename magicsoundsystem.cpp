@@ -75,6 +75,8 @@ uint8_t* ApolloSoundCache_Unaligned = NULL;
 uint8_t* ApolloSoundCache = NULL;
 uint32_t ApolloCachePointer = 0;
 std::map<std::string, struct ApolloSound> ApolloSoundCacheMap;
+struct ApolloPicture apollo_splashscreen= {};
+struct ApolloPicture apollo_titlescreen= {};
 
 #else
 int streamThreshold = 1024 * 1024;
@@ -693,6 +695,12 @@ extern "C" int MSS_SoundInit(int frequency)
 #endif	
 
 	#ifdef APOLLO
+	strcpy(apollo_splashscreen.filename, "Apollo/SettlersII_1280x720.dds");
+	apollo_splashscreen.format = APOLLO_DDS_FORMAT;
+	apollo_splashscreen.endian = true;
+	ApolloLoadPicture(&apollo_splashscreen);
+	ApolloShowPicture(&apollo_splashscreen);
+	
 	ApolloSoundCache_Unaligned = (uint8_t*)AllocVec(256*1024*1024, MEMF_PUBLIC | MEMF_CLEAR);
 	ApolloSoundCache = (uint8_t*)(((uint32_t)(ApolloSoundCache_Unaligned+31) & ~31));	
 
@@ -702,11 +710,11 @@ extern "C" int MSS_SoundInit(int frequency)
 	{
 		while ((apollo_direntry = readdir(apollo_dir)) != NULL)
 		{
-			AD(sprintf(ApolloDebugMessage, "Pre-Caching Sound Files in Apollo: %s\n", apollo_direntry->d_name);)
-			AD(ApolloDebugPutStr(ApolloDebugMessage);)
-
-			if ( (strstr(apollo_direntry->d_name,"00")) && ( (strstr(apollo_direntry->d_name,".aiff"))||(strstr(apollo_direntry->d_name,".AIFF")) ) )
+			if (  ( (strstr(apollo_direntry->d_name,".aiff"))||(strstr(apollo_direntry->d_name,".AIFF")) ) ) // (strstr(apollo_direntry->d_name,"00")) &&
 			{
+				AD(sprintf(ApolloDebugMessage, "Pre-Caching Sound Files in Apollo: %s\n", apollo_direntry->d_name);)
+				AD(ApolloDebugPutStr(ApolloDebugMessage);)
+
 				struct ApolloSound apollo_sound;
 				char apollo_filename[256];
 				strcpy(apollo_filename, "Apollo/");
@@ -761,15 +769,17 @@ extern "C" int MSS_SoundInit(int frequency)
 	} else {
 		AD(ApolloDebugPutStr("Could not open Apollo directory\n");)
 	}
+
+	
+
+	strcpy(apollo_titlescreen.filename, "Apollo/SettlersII_Gold.dds");
+	apollo_titlescreen.format = APOLLO_DDS_FORMAT;
+	apollo_titlescreen.endian = true;
+	ApolloLoadPicture(&apollo_titlescreen);
+	ApolloShowPicture(&apollo_titlescreen);
+
 	#endif
-
-
-
-
-
-
-
-	return 1;
+	return 1;	
 }
 
 extern "C" void MSS_SoundClose()
@@ -814,6 +824,10 @@ extern "C" void MSS_SoundClose()
 		ApolloSoundCache_Unaligned = NULL;
 		ApolloSoundCache = NULL;
 	}
+
+	ApolloFreePicture(&apollo_titlescreen);
+	ApolloFreePicture(&apollo_splashscreen);
+
 	#endif
 }
 	
