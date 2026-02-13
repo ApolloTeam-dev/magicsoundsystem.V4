@@ -257,10 +257,13 @@ uint8_t ApolloPlaySound( struct ApolloSound *sound)
 	} else {
 		sound->channel = channel;
 	}
- 
+	
+	//if(sound->period > 80)
+	//{
 	AD(sprintf(ApolloDebugMessage, "ApolloPlaySound: File=%-25s | Size=%8d | Cache=%12d | Channel=%02d | Vol-L = %3d | Vol-R = %3d | Loop = %d | Fadein = %d | Period = %3d |\n",
 		 sound->filename, sound->size, sound->size, sound->channel, sound->volume_left, sound->volume_right, sound->loop, sound->fadein, sound->period);)
 	AD(ApolloDebugPutStr(ApolloDebugMessage);)
+	//}
 
 	*((volatile uint32_t*)(0xDFF400 + (sound->channel * 0x10))) = (uint32_t)(sound->buffer+sound->position);  	// Set Channel Pointer
 	*((volatile uint32_t*)(0xDFF404 + (sound->channel * 0x10))) = (uint32_t)(sound->size/8);					// Set Channel Music length (in pairs of stereo sample = 2 * 2 * 16-bit = 64-bit chunksize = filesize in bytes / 8)
@@ -908,7 +911,6 @@ void ApolloMouse(ApolloMouseState *MouseState)
 	return;
 }
 
-
 void ApolloKeyboard(ApolloKeyBoardState *KeyboardState)
 {
 	UBYTE* const 	Keyboard_Pointer = (UBYTE*)0xBFEC01; 
@@ -929,7 +931,6 @@ void ApolloKeyboard(ApolloKeyBoardState *KeyboardState)
 		KeyboardState->Current_Key = 127;
 	}
 }
-
 
 UBYTE ApolloKeyboardToUnicode(UBYTE KeyboardAmiga)
 {

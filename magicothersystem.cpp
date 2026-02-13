@@ -374,6 +374,13 @@ extern "C" void MSS_CloseScreen(void *screenHandle)
     CloseDevice((IORequest*)input_io);
     DeleteExtIO((IORequest*)input_io);
     DeletePort(input_mp);
+    struct ApolloSound apollo_sound;
+    for(uint8_t channel =0; channel < 16; channel++)
+    {
+        apollo_sound.channel = channel;
+        ApolloStopSound(&apollo_sound);
+    }
+
     #endif
 }
 
@@ -599,7 +606,7 @@ extern "C" void *MSS_OpenScreen(int width, int height, int depth, int fullscreen
 {
 	#ifdef APOLLO
     uint32_t mode = GetMode(width,height);
-    AD(sprintf(ApolloDebugMessage, "MSS_OpenScreen: Width=%d | Height=%d | Depth=%d | Fullscreen=%d | Mode=0x%08x\n", width, height, depth, fullscreen, mode);)
+    AD(sprintf(ApolloDebugMessage, "MSS_OpenScreen : Width=%d | Height=%d | Depth=%d | Fullscreen=%d | Mode=0x%08x\n", width, height, depth, fullscreen, mode);)
     AD(ApolloDebugPutStr(ApolloDebugMessage);)
      if (input_mp = CreatePort(0,0) )
         if (input_io = (struct IOStdReq *) CreateExtIO(input_mp,sizeof(struct IOStdReq)) )
@@ -630,6 +637,8 @@ extern "C" void *MSS_OpenScreen(int width, int height, int depth, int fullscreen
     apollo_pip.width = (uint16_t)width;
     apollo_pip.height = (uint16_t)height;
     apollo_pip.depth = (uint8_t)depth;
+    apollo_pip.size = 0; // Will be set by ApolloAllocPicture
+
     ApolloAllocPicture(&apollo_pip);
     
     apollo_pip.fullscreen = fullscreen; // amigaScreen->fullscreen;
@@ -800,7 +809,7 @@ extern "C" void *MSS_OpenScreen(int width, int height, int depth, int fullscreen
     // Return the structure as a void pointer
 
     #ifdef APOLLO
-    AD(sprintf(ApolloDebugMessage, "MSS_OpenScreen: Initialize Apollo SAGA PiP and Fullscreen\n");)
+    AD(sprintf(ApolloDebugMessage, "MSS_OpenScreen : Initialize Apollo SAGA PiP and Fullscreen\n");)
     AD(ApolloDebugPutStr(ApolloDebugMessage);)
     *(volatile LONG*)APOLLO_SAGA_PIP_POINTER = (uint32_t)(apollo_pip.buffer + apollo_pip.position);                                                 // Set PiP Bitmap Pointer
     *(volatile int16_t*)APOLLO_SAGA_PIP_X_START = (amigaScreen->window->LeftEdge + amigaScreen->window->BorderLeft +16) ;                           // Set PiP X Start Position (+16 pixel correction needed) 
