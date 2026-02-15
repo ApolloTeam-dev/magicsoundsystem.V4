@@ -374,13 +374,6 @@ extern "C" void MSS_CloseScreen(void *screenHandle)
     CloseDevice((IORequest*)input_io);
     DeleteExtIO((IORequest*)input_io);
     DeletePort(input_mp);
-    struct ApolloSound apollo_sound;
-    for(uint8_t channel =0; channel < 16; channel++)
-    {
-        apollo_sound.channel = channel;
-        ApolloStopSound(&apollo_sound);
-    }
-
     #endif
 }
 

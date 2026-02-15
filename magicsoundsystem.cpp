@@ -677,7 +677,8 @@ extern "C" int MSS_SoundInit(int frequency)
 	thesamples = spec.samples;
 	theformat = spec.format;
 
-    if (!g_FXInitialized)
+    #ifndef APOLLO
+	if (!g_FXInitialized)
     {	
         if (SDL_OpenAudio(&spec, NULL) < 0) 
         {
@@ -685,7 +686,8 @@ extern "C" int MSS_SoundInit(int frequency)
         }
         g_FXInitialized = 1;
     }
-	
+	#endif
+
 	mid_inited = 0;
 #if 0
     if (mid_init(NULL) < 0) 
@@ -912,12 +914,12 @@ extern "C" void MSS_Play(void *handle, double _vol, double _pan, int looped, boo
 		apollo_sound.period = sound->wavstreamfreq;
 		if(apollo_sound.size > 20000000)
 		{
-			apollo_sound.volume_left = 6;								// Background Music
-			apollo_sound.volume_right = 6;
+			apollo_sound.volume_left = 0x20;								// Background Music
+			apollo_sound.volume_right = 0x20;
 		} else
 		{
-			apollo_sound.volume_left = (uint8_t)(_vol * 127);
-			apollo_sound.volume_right = (uint8_t)(_vol * 127);
+			apollo_sound.volume_left = (uint8_t)(_vol * 0xFF);
+			apollo_sound.volume_right = (uint8_t)(_vol * 0xFF);
 		}
 		apollo_sound.fadein = false;
 		apollo_sound.fadeout = false;
@@ -969,8 +971,8 @@ extern "C" void MSS_Stop(void *handle)
 		ApolloStopSound(&apollo_sound);
 		sound->playing = false;	
 
-		AD(sprintf(ApolloDebugMessage, "MSS_Stop       : File=%-25s | Size=%8d | Channel=%02d\n", apollo_sound.filename, apollo_sound.size, apollo_sound.channel);)
-		AD(ApolloDebugPutStr(ApolloDebugMessage);)
+		ADX(sprintf(ApolloDebugMessage, "MSS_Stop       : File=%-25s | Size=%8d | Channel=%02d\n", apollo_sound.filename, apollo_sound.size, apollo_sound.channel);)
+		ADX(ApolloDebugPutStr(ApolloDebugMessage);)
 	}
 	#endif
 
@@ -1488,9 +1490,9 @@ extern "C" void *MSS_LoadSample(const char* name)
 	sound->wavstreamfreq 	= ApolloSoundCacheMap[name].period;
 	sound->playing 			= false;	
 
-	AD(sprintf(ApolloDebugMessage, "MSS_LoadSample : File=%-25s | Size=%8d | Cache=%12d | Period=%5d \n",
-		name, ApolloSoundCacheMap[name].filename, sound->position, sound->audioLength, sound->wavstreamfreq);)
-	AD(ApolloDebugPutStr(ApolloDebugMessage);)
+	ADX(sprintf(ApolloDebugMessage, "MSS_LoadSample : File=%-25s | Size=%8d | Cache=%12d | Period=%5d \n",
+		sound->extFile, sound->audioLength, sound->position, sound->wavstreamfreq);)
+	ADX(ApolloDebugPutStr(ApolloDebugMessage);)
 	
 	return sound;
 	#endif
