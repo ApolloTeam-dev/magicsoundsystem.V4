@@ -2,3 +2,4 @@
 *.o
 ApolloLib//*.o
 
+magicsystem.dll

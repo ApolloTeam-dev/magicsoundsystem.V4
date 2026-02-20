@@ -69,8 +69,6 @@ int theformat;
 int thesamples;
 
 #ifdef APOLLO
-int streamThreshold = 100 * 1024 * 1024;
-
 uint8_t* ApolloSoundCache_Unaligned = NULL;
 uint8_t* ApolloSoundCache = NULL;
 uint32_t ApolloCachePointer = 0;
@@ -78,10 +76,9 @@ std::map<std::string, struct ApolloSound> ApolloSoundCacheMap;
 std::map<uint8_t, std::string> ApolloSoundChannels;
 struct ApolloPicture apollo_splashscreen= {};
 struct ApolloPicture apollo_titlescreen= {};
-
-#else
-int streamThreshold = 1024 * 1024;
 #endif
+
+int streamThreshold = 1024 * 1024;
 
 struct Library *MPEGABase = 0;
 
@@ -114,8 +111,9 @@ typedef struct {
 int MSS_OpenWave(const char* name, unsigned char** vbuffer, unsigned int* size, int UsedInWindowsOnly) 
 {
     #ifdef APOLLO
-	AD(sprintf(ApolloDebugMessage, "MSS_OpenWave: Opening WAV file: %s\n", name);)
-	AD(ApolloDebugPutStr(ApolloDebugMessage);)
+	ADXX(sprintf(ApolloDebugMessage, "MSS_OpenWave: Opening WAV file: %s\n", name);)
+	ADXX(ApolloDebugPutStr(ApolloDebugMessage);)
+	return 0;
 	#endif
 	
 	FILE* file = fopen(name, "rb"); // Open the WAV file in binary mode for reading
@@ -158,6 +156,7 @@ void MSS_CloseWave(void* audioBuffer, void *fileBuffer)
     #ifdef APOLLO
 	AD(sprintf(ApolloDebugMessage, "MSS_CloseWave: Closing WAV file\n");)
 	AD(ApolloDebugPutStr(ApolloDebugMessage);)		
+	return;
 	#endif
 	
 	if (audioBuffer) 
@@ -234,8 +233,8 @@ std::vector<SoundItem*> g_FXsounds;
 extern "C" void MSS_SetLog(void *handle, FILE *thelog)
 {
 	#ifdef APOLLO
-	AD(sprintf(ApolloDebugMessage, "MSS_SetLog: Setting log file\n");)
-	AD(ApolloDebugPutStr(ApolloDebugMessage);)	
+	ADXX(sprintf(ApolloDebugMessage, "MSS_SetLog: Setting log file\n");)
+	ADXX(ApolloDebugPutStr(ApolloDebugMessage);)	
 	#endif
 	
 	SoundItem *sound = (SoundItem*)handle;
@@ -245,10 +244,6 @@ extern "C" void MSS_SetLog(void *handle, FILE *thelog)
 
 extern "C" int MSS_IsPlaying(void *handle)
 {
-	#ifdef APOLLO
-	return 1;
-	#endif
-	
 	SoundItem *sound = (SoundItem *)handle;
 	if (sound)
 	{
@@ -264,7 +259,9 @@ extern "C" int MSS_IsPlaying(void *handle)
 void AudioCallback_Ogg(SoundItem *sound, void *userdata, unsigned char *stream, int length) 
 {
     #ifdef APOLLO
-	AD(ApolloDebugPutStr("AudioCallback_Ogg called\n");)	
+	ADXX(ApolloDebugPutStr("AudioCallback_OGG called\n");)
+	// Apollo Audio does not use Callback
+	return;
 	#endif
 	
 	int bitstream;
@@ -287,7 +284,6 @@ void AudioCallback_Ogg(SoundItem *sound, void *userdata, unsigned char *stream, 
     } 
     else 
     {
-
         sound->position += read;
 
         // Perform channel conversion if necessary
@@ -308,7 +304,9 @@ void AudioCallback_Ogg(SoundItem *sound, void *userdata, unsigned char *stream, 
 void AudioCallback_MP3(SoundItem *sound, void *userdata, unsigned char *stream, int length) 
 {
     #ifdef APOLLO
-	AD(ApolloDebugPutStr("AudioCallback_MP3 called\n");)
+	ADXX(ApolloDebugPutStr("AudioCallback_MP3 called\n");)
+	// Apollo Audio does not use Callback
+	return;
 	#endif
 	
 	// For MP3 files, decode and mix audio data from stream
@@ -365,10 +363,12 @@ void AudioCallback_MP3(SoundItem *sound, void *userdata, unsigned char *stream, 
 void AudioCallback_Wav(SoundItem *sound, void *userdata, unsigned char *stream, int length) 
 {
 	#ifdef APOLLO
-	AD(ApolloDebugPutStr("AudioCallback_Wav called\n");)
+	ADXX(ApolloDebugPutStr("AudioCallback_WAV called\n");)
+	// Apollo Audio does not use Callback
+	return;
 	#endif
 
-    if (sound->usewavstreaming) 
+    if(sound->usewavstreaming) 
 	{
         WavStreamData *streamData = (WavStreamData *)sound->extradata;
 
@@ -463,6 +463,8 @@ void AudioCallback_Midi(SoundItem *sound, void *userdata, unsigned char *stream,
 {
     #ifdef APOLLO
 	AD(ApolloDebugPutStr("AudioCallback_Midi called\n");)
+	// Apollo Audio does not use Callback
+	return;
 	#endif
 	
 	int bytesRead = mid_song_read_wave(sound->midiSong, sound->midiBuffer, length);
@@ -492,6 +494,8 @@ void AudioCallback(void *userdata, unsigned char *stream, int len)
 {
     #ifdef APOLLO
 	AD(ApolloDebugPutStr("AudioCallback called\n");)	
+	// Apollo Audio does not use Callback
+	return;
 	#endif
 	
 	SDL_memset(stream, 0, len);
@@ -553,8 +557,9 @@ extern "C" void MSS_SetWAVDirectory(const char* dirname1, const char* dirname2);
 BOOL CheckAHIAudioMode()
 {
 	#ifdef APOLLO
-	AD(sprintf(ApolloDebugMessage, "CheckAHIAudioMode: Checking AHI audio mode\n");)
-	AD(ApolloDebugPutStr(ApolloDebugMessage);)
+	ADXX(sprintf(ApolloDebugMessage, "CheckAHIAudioMode: Checking AHI audio mode\n");)
+	ADXX(ApolloDebugPutStr(ApolloDebugMessage);)
+	return true;
 	#endif
 
     struct AHIRequest *AHIio;
@@ -781,6 +786,7 @@ extern "C" int MSS_SoundInit(int frequency)
 	apollo_titlescreen.endian = true;
 	ApolloLoadPicture(&apollo_titlescreen);
 	ApolloShowPicture(&apollo_titlescreen);
+	ApolloCPUDelay(1000);
 
 	#endif
 	return 1;	
@@ -889,7 +895,7 @@ extern "C" void MSS_Play(void *handle, double _vol, double _pan, int looped, boo
 	SoundItem *sound = (SoundItem*)handle;
 		
 	#ifdef APOLLO
-	if(sound && (strstr((char*)sound->extFile, "00")) && ((looped!=0) && !sound->playing) || (looped==0))
+	if(sound) // && (strstr((char*)sound->extFile, "00")) && ((looped!=0) && !sound->playing) || (looped==0))
 	{
 		bool channelfree;
 		for(uint8_t channel =0; channel < 16; channel++)
@@ -899,8 +905,8 @@ extern "C" void MSS_Play(void *handle, double _vol, double _pan, int looped, boo
 			
 			if(ApolloSoundChannels[channel] == (char*)sound->extFile)
 			{
-				ADX(sprintf(ApolloDebugMessage, "MSS_Play       : Sound %s is already playing on channel %d\n", (char*)sound->extFile, channel);)
-				ADX(ApolloDebugPutStr(ApolloDebugMessage);)
+				ADXX(sprintf(ApolloDebugMessage, "MSS_Play       : Sound %s is already playing on channel %d\n", (char*)sound->extFile, channel);)
+				ADXX(ApolloDebugPutStr(ApolloDebugMessage);)
 				return;
 			}
 		}
@@ -914,12 +920,13 @@ extern "C" void MSS_Play(void *handle, double _vol, double _pan, int looped, boo
 		apollo_sound.period = sound->wavstreamfreq;
 		if(apollo_sound.size > 20000000)
 		{
-			apollo_sound.volume_left = 0x20;								// Background Music
-			apollo_sound.volume_right = 0x20;
+			apollo_sound.volume_left = 0x08;								// Background Music
+			apollo_sound.volume_right = 0x08;
 		} else
 		{
-			apollo_sound.volume_left = (uint8_t)(_vol * 0xFF);
-			apollo_sound.volume_right = (uint8_t)(_vol * 0xFF);
+			apollo_sound.volume_left = (uint16_t)(_vol * 0xFF);
+			apollo_sound.volume_right = (uint16_t)(_vol * 0xFF);
+			apollo_sound.pan = (uint16_t)(_pan );
 		}
 		apollo_sound.fadein = false;
 		apollo_sound.fadeout = false;
@@ -964,15 +971,17 @@ extern "C" void MSS_Stop(void *handle)
 	if(sound)
 	{
 		struct ApolloSound apollo_sound;
-		strcpy(apollo_sound.filename, (char*)sound->extFile);
 		apollo_sound.channel = sound->wavstreamchannels;
 		apollo_sound.size = sound->audioLength;
 		
-		ApolloStopSound(&apollo_sound);
-		sound->playing = false;	
-
-		ADX(sprintf(ApolloDebugMessage, "MSS_Stop       : File=%-25s | Size=%8d | Channel=%02d\n", apollo_sound.filename, apollo_sound.size, apollo_sound.channel);)
-		ADX(ApolloDebugPutStr(ApolloDebugMessage);)
+		if(apollo_sound.size > 20000000)
+		{
+			ApolloStopSound(&apollo_sound);
+			AD(strcpy(apollo_sound.filename, (char*)sound->extFile);)
+			AD(sprintf(ApolloDebugMessage, "MSS_Stop       : File=%-25s | Size=%8d | Channel=%02d\n", apollo_sound.filename, apollo_sound.size, apollo_sound.channel);)
+			AD(ApolloDebugPutStr(ApolloDebugMessage);)
+		}
+		sound->playing = false;
 	}
 	#endif
 
@@ -1268,6 +1277,7 @@ void *MSS_LoadWave(const char* name, unsigned int* loadedSize)
 	#ifdef APOLLO
 	AD(sprintf(ApolloDebugMessage, "MSS_LoadWave: Loading wave file %s\n", name);)
 	AD(ApolloDebugPutStr(ApolloDebugMessage);)
+	return 0;
 	#endif	
 
 	unsigned char* tempBuffer = nullptr;
@@ -1309,6 +1319,7 @@ extern "C" char* MSS_LoadFileToMemory(const char* filename, size_t& fileSize)
     #ifdef APOLLO
 	AD(sprintf(ApolloDebugMessage, "MSS_LoadFileToMemory: Loading file %s to memory\n", filename);)
 	AD(ApolloDebugPutStr(ApolloDebugMessage);)
+	return 0;
 	#endif
 		
 	FILE* file = fopen(filename, "rb");
@@ -1368,8 +1379,8 @@ extern "C" void MSS_SetWAVDirectory(const char* dirname1, const char* dirname2)
 int LoadWAVStreaming(const char *file, SoundItem *sound) 
 {
     #ifdef APOLLO
-	AD(sprintf(ApolloDebugMessage, "LoadWAVStreaming: Loading WAV file %s for streaming\n", file);)
-	AD(ApolloDebugPutStr(ApolloDebugMessage);)
+	// Apollo Audio is always bases on DMA from memory
+	return 0;
 	#endif
 	
 	// Open the WAV file
@@ -1435,9 +1446,7 @@ int LoadWAVStreaming(const char *file, SoundItem *sound)
 
 extern "C" void MSS_SetStreamThreshold(int threshold)
 {
-	#ifndef APOLLO
 	streamThreshold = threshold;
-	#endif
 }
 
 extern "C" void *MSS_LoadSample(const char* name)
@@ -1488,11 +1497,10 @@ extern "C" void *MSS_LoadSample(const char* name)
 	sound->position 		= ApolloSoundCacheMap[name].position; 
 	sound->audioLength 		= ApolloSoundCacheMap[name].size;
 	sound->wavstreamfreq 	= ApolloSoundCacheMap[name].period;
-	sound->playing 			= false;	
 
-	ADX(sprintf(ApolloDebugMessage, "MSS_LoadSample : File=%-25s | Size=%8d | Cache=%12d | Period=%5d \n",
+	ADXX(sprintf(ApolloDebugMessage, "MSS_LoadSample : File=%-25s | Size=%8d | Cache=%12d | Period=%5d \n",
 		sound->extFile, sound->audioLength, sound->position, sound->wavstreamfreq);)
-	ADX(ApolloDebugPutStr(ApolloDebugMessage);)
+	ADXX(ApolloDebugPutStr(ApolloDebugMessage);)
 	
 	return sound;
 	#endif
@@ -1708,8 +1716,8 @@ extern "C" void *MSS_LoadSample(const char* name)
 extern "C" void *MSS_LoadAudioFromMemory(const char* audioBuffer, unsigned int audioLength, int channels, int freq, int bitsPerSample)
 {
 	#ifdef APOLLO
-	AD(sprintf(ApolloDebugMessage, "MSS_LoadAudioFromMemory: Loading audio from memory\n");)
-	AD(ApolloDebugPutStr(ApolloDebugMessage);)
+	// Redundant
+	return 0;
 	#endif
 	
 	SoundItem *sound = 0;

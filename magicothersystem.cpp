@@ -30,7 +30,8 @@
 #include <SDL/SDL.h>
 
 #ifdef APOLLO
-extern char ApolloDebugMessage[200];
+uint8_t skipfirsttwoscreen = 0;
+extern char ApolloDebugMessage[256];
 ApolloJoypadState apollo_joypad;
 struct IOStdReq *input_io;
 struct MsgPort *input_mp;
@@ -374,6 +375,15 @@ extern "C" void MSS_CloseScreen(void *screenHandle)
     CloseDevice((IORequest*)input_io);
     DeleteExtIO((IORequest*)input_io);
     DeletePort(input_mp);
+
+    for(uint8_t channel; channel <16; channel++)
+	{
+		struct ApolloSound apollo_sound;
+		apollo_sound.channel = channel;
+		strcpy(apollo_sound.filename, "ApolloSound");
+		ApolloStopSound(&apollo_sound);
+	}
+
     #endif
 }
 
@@ -813,6 +823,9 @@ extern "C" void *MSS_OpenScreen(int width, int height, int depth, int fullscreen
     *(volatile int16_t*)APOLLO_SAGA_PIP_MODULO = 0;                                                                                                 // No Modulo (PiP Bitmap width matches PiP Window width)                                   
     *(volatile int16_t*)APOLLO_SAGA_PIP_CLRKEY = 0x0000;                                                                                            // Colorkey = 0 -> ChromKey mode disable -> Overlay Mode Enabled
 
+    
+    if (skipfirsttwoscreen++ < 1) return (void*)amigaScreen;
+    
     if(apollo_pip.fullscreen)
     {
         ApolloHidePiP();
@@ -861,8 +874,8 @@ ULONG colors[2 + 3 * 256];  // 2 for the count/first color and the terminator, 3
 extern "C" void MSS_SetColors(void *screenHandle, int startCol, int skipCols, int numCols, unsigned char *rvalues, unsigned char *gvalues, unsigned char *bvalues)
 {
     #ifdef APOLLO
-    ADX(sprintf(ApolloDebugMessage,"MSS_SetColors : StartCol=%d | SkipCols=%d | NumCols=%d\n", startCol, skipCols, numCols);)
-    ADX(ApolloDebugPutStr(ApolloDebugMessage);)  
+    ADXX(sprintf(ApolloDebugMessage,"MSS_SetColors : StartCol=%d | SkipCols=%d | NumCols=%d\n", startCol, skipCols, numCols);)
+    ADXX(ApolloDebugPutStr(ApolloDebugMessage);)  
     #endif
 
     // Allocate enough space for the color table
@@ -1202,21 +1215,14 @@ extern "C" int MSS_GetMouseState(int *x, int *y)
         }
     }
 
-    if (apollo_pip.fullscreen == 0)
+    if (apollo_pip.fullscreen == 1)
 	{
-		*x = *x - amigaScreen->window->BorderLeft;
-		*y = *y - amigaScreen->window->BorderTop;
-	}
-
-    /*ADX(if(*x != old_x || *y != old_y ||  leftPressed != oldleftPressed || rightPressed != oldrightPressed ) 
-    {
-        AD(sprintf(ApolloDebugMessage,"| *x = %4d -> %4d | *y = %4d -> %4d | Left = %1d | Right = %1d |\n", old_x, *x, old_y, *y, leftPressed, rightPressed);)
-        AD(ApolloDebugPutStr(ApolloDebugMessage);)
-        old_x = *x;
-        old_y = *y;
-        oldleftPressed = leftPressed;
-        oldrightPressed = rightPressed;
-    })*/
+		*x = amigaScreen->screen->MouseX;
+		*y = amigaScreen->screen->MouseY;
+	} else {
+        *x = amigaScreen->window->MouseX - amigaScreen->window->BorderLeft;
+        *y = amigaScreen->window->MouseY - amigaScreen->window->BorderTop;
+    }
 
    	#else
 	if (amigaScreen->fullscreen==0)
@@ -1395,8 +1401,8 @@ extern "C" void MSS_FillRect(void *screen, int col, int x, int y, int width, int
 
     #ifdef APOLLO
     ApolloFill(apollo_pip.buffer + apollo_pip.position + x + (y * apollo_pip.width), width, height, apollo_pip.depth, 0, col);
-    ADX(sprintf(ApolloDebugMessage,"MSS_FillRect  : Color=%3d | X=%4d | Y=%4d | W=%4d | H=%4d\n", col, x, y, width, height);)
-    ADX(ApolloDebugPutStr(ApolloDebugMessage);)
+    ADXX(sprintf(ApolloDebugMessage,"MSS_FillRect  : Color=%3d | X=%4d | Y=%4d | W=%4d | H=%4d\n", col, x, y, width, height);)
+    ADXX(ApolloDebugPutStr(ApolloDebugMessage);)
     return; 
     #endif
 
