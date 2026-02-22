@@ -30,7 +30,6 @@
 #include <SDL/SDL.h>
 
 #ifdef APOLLO
-uint8_t skipfirsttwoscreen = 0;
 extern char ApolloDebugMessage[256];
 ApolloJoypadState apollo_joypad;
 struct IOStdReq *input_io;
@@ -383,7 +382,6 @@ extern "C" void MSS_CloseScreen(void *screenHandle)
 		strcpy(apollo_sound.filename, "ApolloSound");
 		ApolloStopSound(&apollo_sound);
 	}
-
     #endif
 }
 
@@ -645,8 +643,8 @@ extern "C" void *MSS_OpenScreen(int width, int height, int depth, int fullscreen
     ApolloAllocPicture(&apollo_pip);
     
     apollo_pip.fullscreen = fullscreen; // amigaScreen->fullscreen;
-    amigaScreen->fullscreen = false;    // Always open windowed on Apollo, PiP handles fullscreen
-    fullscreen = false;
+    //amigaScreen->fullscreen = false;    // Always open windowed on Apollo, PiP handles fullscreen
+    //fullscreen = false;
     usingWCP = 1;
 
     #else
@@ -765,7 +763,7 @@ extern "C" void *MSS_OpenScreen(int width, int height, int depth, int fullscreen
 		}
 	
 		//ClearPointer(amigaScreen->window);
-		//SetPointer(amigaScreen->window, (UWORD*)amigaScreen->pointer, 1, 16, 0, 0);		
+		SetPointer(amigaScreen->window, (UWORD*)amigaScreen->pointer, 1, 16, 0, 0);		
 	} else {
         amigaScreen->pointer = 0; 
     }   
@@ -822,9 +820,6 @@ extern "C" void *MSS_OpenScreen(int width, int height, int depth, int fullscreen
     *(volatile int16_t*)APOLLO_SAGA_PIP_GFXMODE = APOLLO_SAGA_8_INDEX;                                                                              // Match Apollo SAGA with PiP Overlay Bitmap format                         
     *(volatile int16_t*)APOLLO_SAGA_PIP_MODULO = 0;                                                                                                 // No Modulo (PiP Bitmap width matches PiP Window width)                                   
     *(volatile int16_t*)APOLLO_SAGA_PIP_CLRKEY = 0x0000;                                                                                            // Colorkey = 0 -> ChromKey mode disable -> Overlay Mode Enabled
-
-    
-    if (skipfirsttwoscreen++ < 1) return (void*)amigaScreen;
     
     if(apollo_pip.fullscreen)
     {
