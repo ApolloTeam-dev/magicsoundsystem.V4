@@ -895,7 +895,7 @@ extern "C" void MSS_Play(void *handle, double _vol, double _pan, int looped, boo
 	SoundItem *sound = (SoundItem*)handle;
 		
 	#ifdef APOLLO
-	if(sound) // && (strstr((char*)sound->extFile, "00")) && ((looped!=0) && !sound->playing) || (looped==0))
+	if(sound)
 	{
 		bool channelfree;
 		for(uint8_t channel =0; channel < 16; channel++)
@@ -922,11 +922,14 @@ extern "C" void MSS_Play(void *handle, double _vol, double _pan, int looped, boo
 		{
 			apollo_sound.volume_left = 0x08;								// Background Music
 			apollo_sound.volume_right = 0x08;
+			apollo_sound.channel = 0;
+			apollo_sound.staticchannel = true;								// Background Music is forced on Channel 0
 		} else
 		{
 			apollo_sound.volume_left = (uint16_t)(_vol * 0xFF);
 			apollo_sound.volume_right = (uint16_t)(_vol * 0xFF);
 			apollo_sound.pan = (uint16_t)(_pan );
+			apollo_sound.staticchannel = false;
 		}
 		apollo_sound.fadein = false;
 		apollo_sound.fadeout = false;

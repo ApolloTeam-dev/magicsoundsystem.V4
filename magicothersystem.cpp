@@ -363,6 +363,7 @@ extern "C" void MSS_CloseScreen(void *screenHandle)
 		CloseLibrary(LowLevelBase);
 		LowLevelBase = 0;
 	}
+
     #ifdef APOLLO
     if(apollo_pip.fullscreen)
     {
@@ -375,12 +376,12 @@ extern "C" void MSS_CloseScreen(void *screenHandle)
     DeleteExtIO((IORequest*)input_io);
     DeletePort(input_mp);
 
-    for(uint8_t channel; channel <16; channel++)
+    for(uint8_t channel = 1; channel <16; channel++)
 	{
 		struct ApolloSound apollo_sound;
 		apollo_sound.channel = channel;
 		strcpy(apollo_sound.filename, "ApolloSound");
-		ApolloStopSound(&apollo_sound);
+        ApolloStopSound(&apollo_sound);
 	}
     #endif
 }
@@ -632,7 +633,6 @@ extern "C" void *MSS_OpenScreen(int width, int height, int depth, int fullscreen
 
     #ifdef APOLLO
     ApolloBackupWBScreen(&apollo_wbscreen);
-    amigaScreen->screen = LockPubScreen(NULL);
     
     strcpy(apollo_pip.filename, "Settlers 2 Apollo PiP Window");
     apollo_pip.width = (uint16_t)width;
@@ -642,10 +642,10 @@ extern "C" void *MSS_OpenScreen(int width, int height, int depth, int fullscreen
 
     ApolloAllocPicture(&apollo_pip);
     
-    apollo_pip.fullscreen = fullscreen; // amigaScreen->fullscreen;
-    //amigaScreen->fullscreen = false;    // Always open windowed on Apollo, PiP handles fullscreen
-    //fullscreen = false;
-    usingWCP = 1;
+    apollo_pip.fullscreen = fullscreen;     // Set ApolloPiP based on Menu Value of FullScreen
+    //amigaScreen->fullscreen = 0;            // Always use fullscreen mode (private screen bitmap which we display fullscreen or in PiP)
+    //fullscreen = 0;
+    //usingWCP = 1;
 
     #else
 	usingWCP = 0;
@@ -670,8 +670,7 @@ extern "C" void *MSS_OpenScreen(int width, int height, int depth, int fullscreen
 		}
 	}
 	firstTimeConfig = 1;	
-
-	//fullscreen = 0;
+    #endif
 
     if (fullscreen)
     {
@@ -710,8 +709,7 @@ extern "C" void *MSS_OpenScreen(int width, int height, int depth, int fullscreen
                
         BackupColors(amigaScreen->screen);
     }
-    #endif
-
+   
     // Open a window regardless of the fullscreen status
     ULONG screentag = fullscreen ? WA_CustomScreen : WA_PubScreen;
     ULONG titletag = fullscreen ? TAG_IGNORE : WA_Title;
@@ -720,7 +718,7 @@ extern "C" void *MSS_OpenScreen(int width, int height, int depth, int fullscreen
                 | WFLG_NOCAREREFRESH
                 | WFLG_ACTIVATE
                 | WFLG_RMBTRAP
-                | (fullscreen ? 0 : WFLG_CLOSEGADGET | WFLG_DEPTHGADGET | WFLG_DRAGBAR); // Add gadgets only in windowed mode
+				| (fullscreen ? 0 : WFLG_CLOSEGADGET | WFLG_DEPTHGADGET | WFLG_DRAGBAR); // Add gadgets only in windowed mode
 				
 	if (fullscreen) wflgs |= WFLG_BORDERLESS;
 
@@ -746,7 +744,7 @@ extern "C" void *MSS_OpenScreen(int width, int height, int depth, int fullscreen
         return NULL;
     }
 	
-	if (fullscreen)
+    if (fullscreen)
 	{
 		amigaScreen->pointer = AllocVec(24, MEMF_CLEAR|MEMF_CHIP);
 		if (!amigaScreen->pointer)
@@ -1078,7 +1076,7 @@ extern "C" void MSS_PumpEvents()
 					newEvent.state = (msg->Code & 0x80) ? 0 : 1;  // 0 = key released, 1 = key pressed
 					if (newEvent.state)
 					{
-                        #ifdef APOLLO
+                        #ifdef APOLLO_DISABLED
                         AD(sprintf(ApolloDebugMessage,"Key Pressed: Amiga Code=%d SDL Key=%d\n",msg->Code,newEvent.key);)
                         AD(ApolloDebugPutStr(ApolloDebugMessage);)
                         if(newEvent.key==13)
@@ -1163,10 +1161,6 @@ extern "C" int MSS_GetMouseState(int *x, int *y)
     struct MssAmigaScreen *amigaScreen = (struct MssAmigaScreen *)mssAmigaScreen; // Assuming mssAmigaScreen is a global pointer to your MssAmigaScreen
     if (!amigaScreen || !amigaScreen->window) return 0;
 
-    // Access mouse coordinates directly from the window structure
-    *x = amigaScreen->window->MouseX; // Replace with the actual field name for mouse X
-    *y = amigaScreen->window->MouseY; // Replace with the actual field name for mouse Y
-
 	#ifdef APOLLO
     ApolloJoypad(&apollo_joypad);
     if((apollo_joypad.Joypad_LeftX_Delta!=0 || apollo_joypad.Joypad_LeftY_Delta!=0))
@@ -1212,14 +1206,21 @@ extern "C" int MSS_GetMouseState(int *x, int *y)
 
     if (apollo_pip.fullscreen == 1)
 	{
-		*x = amigaScreen->screen->MouseX;
-		*y = amigaScreen->screen->MouseY;
-	} else {
+		*x = *(uint16_t *)APOLLO_POINTER_GET_X - 16;
+		*y = *(uint16_t *)APOLLO_POINTER_GET_Y - 8;
+    } else {
         *x = amigaScreen->window->MouseX - amigaScreen->window->BorderLeft;
         *y = amigaScreen->window->MouseY - amigaScreen->window->BorderTop;
     }
 
+    ADX(sprintf(ApolloDebugMessage,"Mouse Position: X=%d Y=%d\n", *x, *y);)
+    ADX(ApolloDebugPutStr(ApolloDebugMessage);)
+
    	#else
+    // Access mouse coordinates directly from the window structure
+    *x = amigaScreen->window->MouseX; // Replace with the actual field name for mouse X
+    *y = amigaScreen->window->MouseY; // Replace with the actual field name for mouse Y
+
 	if (amigaScreen->fullscreen==0)
 	{
 		*x = *x - amigaScreen->window->BorderLeft;

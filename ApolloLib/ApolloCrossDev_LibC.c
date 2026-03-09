@@ -241,23 +241,26 @@ uint8_t ApolloLoadSound( struct ApolloSound *sound)
 
 uint8_t ApolloPlaySound( struct ApolloSound *sound)
 {
-	bool channelfree;
-	uint8_t channel;
-	
-	for (channel=0; channel<16; channel++)
+	if(!sound->staticchannel)
 	{
-		channelfree = ( ( (channel < 4) && ( (*((volatile uint16_t*)0xDFF002) & (1<<channel)) == 0) ) || ( (channel >=4) && (*((volatile uint16_t*)0xDFF202) & (1<<(channel-4))) == 0 ) );
-		ADX(sprintf(ApolloDebugMessage, "ApolloPlaySound: Channel = %d | DMA Channel Free = %s\n", channel, channelfree? "YES":"NO");)
-		ADX(ApolloDebugPutStr(ApolloDebugMessage);)
-		if (channelfree)  break;
+		bool channelfree;
+		uint8_t channel;
+		
+		for (channel=1; channel<16; channel++)
+		{
+			channelfree = ( ( (channel < 4) && ( (*((volatile uint16_t*)0xDFF002) & (1<<channel)) == 0) ) || ( (channel >=4) && (*((volatile uint16_t*)0xDFF202) & (1<<(channel-4))) == 0 ) );
+			ADX(sprintf(ApolloDebugMessage, "ApolloPlaySound: Channel = %d | DMA Channel Free = %s\n", channel, channelfree? "YES":"NO");)
+			ADX(ApolloDebugPutStr(ApolloDebugMessage);)
+			if (channelfree)  break;
+		}
+		if(channel==16)
+		{
+			return APOLLO_SOUND_NOCHANNEL;
+		} else {
+			sound->channel = channel;
+		}
 	}
-	if(channel==16)
-	{
-		return APOLLO_SOUND_NOCHANNEL;
-	} else {
-		sound->channel = channel;
-	}
-	
+
 	AD(sprintf(ApolloDebugMessage, "ApolloPlaySound: File=%-25s | Size=%8d | Cache=%12d | Channel=%02d | Vol-L = %3d | Vol-R = %3d | Loop = %d | Fadein = %d | Period = %3d | Pan = %3d\n",
 		sound->filename, sound->size, sound->position, sound->channel, sound->volume_left, sound->volume_right, sound->loop, sound->fadein, sound->period);)
 	AD(ApolloDebugPutStr(ApolloDebugMessage);)
